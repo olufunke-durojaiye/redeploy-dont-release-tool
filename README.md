@@ -6,6 +6,9 @@ A browser-only companion to:
 
 Companion Excel template: https://doi.org/10.5281/zenodo.23935835
 
+**Use the tool:** https://redeploy-dont-release.netlify.app
+**Source code:** https://github.com/Monijay1/redeploy-dont-release-tool
+
 The tool runs the same rules-first matching as the Excel template (version 1.0): score, rank, serial-dictatorship matching, calibration with documented overrides, review requests, an adverse-impact screen, a summary, and the cost estimate. Users can open a filled-in copy of the Excel template directly, or enter data in the page.
 
 ## How data is protected
@@ -27,10 +30,13 @@ The design goal is that **there is nothing to secure on the server, because the 
 
 ### Option A: Netlify (recommended, applies every security header)
 
-1. Sign in at netlify.com and turn on two-factor authentication.
-2. Go to **Add new site → Deploy manually** and drag this whole folder onto the page.
-3. Netlify gives you an HTTPS address within seconds. Rename it under **Site configuration → Change site name** (for example `redeploy-dont-release.netlify.app`).
-4. Optional: add your own domain under **Domain management**. HTTPS is issued automatically.
+The live tool is hosted this way.
+
+1. Sign in at app.netlify.com and turn on two-factor authentication (avatar → **User settings → Security → Two-factor authentication**).
+2. Zip the site files with `index.html` at the top level of the zip, then drop the zip at **app.netlify.com/drop**.
+3. On the project's overview, select **Customize → Manage project name and cover image** to set the address (for example `redeploy-dont-release.netlify.app`).
+4. Make the project public: **Project configuration → General → Visitor access → Project visibility**, set production deploys to **Public**.
+5. To update later, drag a new zip onto **Production deploys** on the project overview. The address stays the same.
 
 Cloudflare Pages works the same way and also reads `_headers`.
 
