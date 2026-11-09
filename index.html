@@ -1,0 +1,1422 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-rdJxDVZrTXsWPtVxhUbE60QgPUvPitwoKujakRP2+mU='; style-src 'sha256-7DLd1S6zuUMvVNe+m9mGWU2sThpOgKJ++cnmmTwTb9U='; img-src data:; base-uri 'none'; form-action 'none'">
+<meta name="referrer" content="no-referrer">
+<meta name="description" content="Browser-only companion tool to Durojaiye (2026), Redeploy, don’t release. Matches employees to open seats using rules set in advance. No data leaves your device.">
+<title>Redeploy, Don’t Release Tool</title>
+<link rel="icon" href="data:,">
+<style>
+/* SPDX-License-Identifier: MIT | Copyright (c) 2026 Olufunke A. Durojaiye */
+/* Layout: a working ledger. Masthead, toolbar, numbered step tabs, one working panel.
+   Inputs follow the workbook's legend: pale yellow cells with blue text; calculated cells are plain. */
+:root {
+  --bg: #f5f6f3;
+  --surface: #ffffff;
+  --ink: #1d2733;
+  --muted: #5d6874;
+  --line: #d9ddd6;
+  --accent: #1f4f8f;
+  --accent-ink: #ffffff;
+  --input-bg: #fff7d1;
+  --input-ink: #1f4f8f;
+  --input-line: #e8d88f;
+  --out-bg: #f0f2ef;
+  --ok: #2c6e49; --ok-bg: #e2f1e7;
+  --warn: #8a5a00; --warn-bg: #fbefd2;
+  --crit: #a8261b; --crit-bg: #fbe3df;
+  --info: #1f4f8f; --info-bg: #e3ebf7;
+  --restricted: #f7eef2; --restricted-line: #d9b7c6;
+  --serif: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif;
+  --sans: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  --r: 6px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #12161b; --surface: #1a2028; --ink: #e5e9ee; --muted: #9aa5b1; --line: #2e3742;
+    --accent: #7fb0f0; --accent-ink: #0e1620; --input-bg: #2a2614; --input-ink: #a9c9ff; --input-line: #4a4320;
+    --out-bg: #20272f; --ok: #7fd1a0; --ok-bg: #173325; --warn: #f0c36a; --warn-bg: #3a2c0f;
+    --crit: #ff9b8f; --crit-bg: #3d1a16; --info: #a9c9ff; --info-bg: #1c2b40;
+    --restricted: #2a1d24; --restricted-line: #5b3a4a; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #12161b; --surface: #1a2028; --ink: #e5e9ee; --muted: #9aa5b1; --line: #2e3742;
+  --accent: #7fb0f0; --accent-ink: #0e1620; --input-bg: #2a2614; --input-ink: #a9c9ff; --input-line: #4a4320;
+  --out-bg: #20272f; --ok: #7fd1a0; --ok-bg: #173325; --warn: #f0c36a; --warn-bg: #3a2c0f;
+  --crit: #ff9b8f; --crit-bg: #3d1a16; --info: #a9c9ff; --info-bg: #1c2b40;
+  --restricted: #2a1d24; --restricted-line: #5b3a4a; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font: 14px/1.5 var(--sans); margin: 0; }
+a { color: var(--accent); }
+.page { max-width: 1240px; margin: 0 auto; padding-block: 28px 48px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+  display: flex; flex-direction: column; gap: 16px; }
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+
+.masthead { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr); gap: 24px; align-items: end;
+  padding-bottom: 18px; border-bottom: 2px solid var(--ink); }
+.eyebrow { margin: 0 0 4px; font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+h1 { font: 600 clamp(28px, 4.2vw, 42px)/1.08 var(--serif); margin: 0; text-wrap: balance; letter-spacing: -.01em; }
+.cite + .cite { margin-top: 2px; }
+.cite { margin: 8px 0 0; color: var(--muted); max-width: 62ch; }
+.privacy { display: flex; flex-direction: column; gap: 2px; padding: 12px 14px; border: 1px solid var(--line);
+  border-left: 3px solid var(--ok); background: var(--surface); border-radius: var(--r); }
+.privacy b { color: var(--ok); }
+.preview-note { margin: 0; padding: 8px 12px; background: var(--warn-bg); color: var(--warn); border-radius: var(--r); }
+
+.toolbar { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 10px; }
+.tb-group { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+button { font: inherit; cursor: pointer; }
+.toolbar button, .btn-sm { border: 1px solid var(--line); background: var(--surface); color: var(--ink);
+  padding: 7px 12px; border-radius: var(--r); }
+.toolbar button:hover, .btn-sm:hover { border-color: var(--accent); color: var(--accent); }
+.toolbar button.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+.toolbar button.primary:hover { filter: brightness(1.08); color: var(--accent-ink); }
+.toolbar button.armed { border-color: var(--crit); color: var(--crit); }
+.chk { display: inline-flex; gap: 6px; align-items: center; color: var(--muted); font-size: 13px; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+.status { display: flex; flex-wrap: wrap; gap: 6px 18px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.status b { color: var(--ink); }
+
+.tabs { display: flex; gap: 2px; overflow-x: auto; border-bottom: 1px solid var(--line); scrollbar-width: thin; }
+.tabs button { flex: 0 0 auto; border: 0; background: none; color: var(--muted); padding: 10px 14px 9px;
+  border-bottom: 3px solid transparent; display: inline-flex; gap: 8px; align-items: center; white-space: nowrap; }
+.tabs button:hover { color: var(--ink); }
+.tabs button[aria-selected="true"] { color: var(--ink); border-bottom-color: var(--accent); font-weight: 600; }
+.tn { display: inline-grid; place-items: center; width: 20px; height: 20px; border-radius: 50%; font-size: 11px;
+  border: 1px solid currentColor; font-variant-numeric: tabular-nums; }
+.tabs button[aria-selected="true"] .tn { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+
+#panel { display: flex; flex-direction: column; gap: 18px; min-width: 0; }
+#panel:focus { outline: none; }
+.p-head h2 { font: 600 24px/1.2 var(--serif); margin: 4px 0 4px; }
+.p-head p { margin: 0; color: var(--muted); max-width: 80ch; }
+.block { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.block h3 { margin: 0; font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.restricted { background: var(--restricted); border: 1px dashed var(--restricted-line); padding: 14px; border-radius: var(--r); }
+.tag { text-transform: none; letter-spacing: 0; font-size: 12px; padding: 1px 8px; border-radius: 99px; background: var(--surface); border: 1px solid var(--restricted-line); color: var(--ink); }
+.mini { font-size: 12.5px; color: var(--muted); margin: 0; }
+.note { font-size: 13px; color: var(--muted); margin: 0; max-width: 90ch; }
+.hint { font-size: 12px; color: var(--muted); }
+.cols2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 420px), 1fr)); gap: 18px; align-items: start; }
+.cols3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr)); gap: 18px; align-items: start; }
+.min0 { min-width: 0; }
+.stack { display: flex; flex-direction: column; gap: 14px; min-width: 0; align-items: flex-start; }
+.stack > * { max-width: 100%; }
+
+.tbl-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: var(--r); background: var(--surface); }
+table.grid { border-collapse: collapse; width: 100%; font-variant-numeric: tabular-nums; }
+.grid th { text-align: left; font-weight: 600; font-size: 12px; color: var(--muted); padding: 8px; border-bottom: 1px solid var(--line); white-space: nowrap; background: var(--surface); }
+.grid td { padding: 3px 4px; border-bottom: 1px solid var(--line); vertical-align: middle; }
+.grid.ro td, .grid td.out, .summary td { padding: 7px 8px; }
+.grid tbody tr:last-child td { border-bottom: 0; }
+.grid tbody th { text-align: left; font-size: 13px; color: var(--ink); padding: 6px 8px; white-space: normal; }
+.grid td.out { background: var(--out-bg); }
+.th-out { background: var(--out-bg) !important; }
+.grid .num { text-align: right; }
+.grid .strong { font-weight: 700; }
+.grid tr.grp th { background: var(--out-bg); text-transform: uppercase; letter-spacing: .07em; font-size: 11px; padding-top: 10px; }
+.grid tr.total td { border-top: 2px solid var(--ink); }
+.w-s { min-width: 84px; } .w-m { min-width: 130px; } .w-l { min-width: 190px; } .w-xl { min-width: 260px; } .w-x { width: 34px; }
+.grid .narrow { width: 130px; }
+.in { width: 100%; font: inherit; color: var(--input-ink); background: var(--input-bg); border: 1px solid var(--input-line);
+  border-radius: 4px; padding: 5px 7px; min-height: 32px; }
+.in:hover { border-color: var(--input-ink); }
+select.in { padding-right: 4px; }
+.x { border: 0; background: none; color: var(--muted); font-size: 18px; line-height: 1; padding: 4px 8px; border-radius: 4px; }
+.x:hover { color: var(--crit); background: var(--crit-bg); }
+.empty { color: var(--muted); padding: 14px 10px !important; font-style: italic; margin: 0; }
+.grid-foot { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
+.pager { display: inline-flex; gap: 8px; align-items: center; color: var(--muted); font-variant-numeric: tabular-nums; }
+.btn-sm:disabled { opacity: .45; cursor: default; color: var(--muted); border-color: var(--line); }
+
+.f-row { display: grid; grid-template-columns: minmax(0, 260px) minmax(0, 240px) minmax(0, 1fr); gap: 12px; align-items: center;
+  padding: 8px 0; border-bottom: 1px solid var(--line); }
+.f-label { font-weight: 600; }
+.f-note { margin: 0; color: var(--muted); font-size: 13px; }
+
+.pill { display: inline-block; padding: 1px 9px; border-radius: 99px; font-size: 12.5px; font-weight: 600; white-space: nowrap; }
+.pill-ok { color: var(--ok); background: var(--ok-bg); }
+.pill-warn { color: var(--warn); background: var(--warn-bg); }
+.pill-crit { color: var(--crit); background: var(--crit-bg); }
+.pill-info { color: var(--info); background: var(--info-bg); }
+.checks .calc { display: flex; flex-wrap: wrap; gap: 6px; }
+
+.seats { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 260px), 1fr)); gap: 8px 24px; }
+.seats li { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 2px 10px; align-items: center; }
+.s-name { font-weight: 600; overflow-wrap: anywhere; }
+.s-num { font-variant-numeric: tabular-nums; color: var(--muted); grid-column: 2; grid-row: 1; }
+.seats progress { grid-column: 1 / -1; width: 100%; height: 8px; accent-color: var(--accent); }
+
+.verdict { display: flex; flex-wrap: wrap; gap: 4px 16px; align-items: baseline; padding: 12px 14px; border-radius: var(--r); margin-bottom: 12px; }
+.verdict b { font: 600 18px/1.3 var(--serif); }
+.v-warn { background: var(--warn-bg); color: var(--warn); }
+.v-ok { background: var(--ok-bg); color: var(--ok); }
+.bigfig { display: flex; flex-direction: column; padding: 14px; border-top: 2px solid var(--ink); }
+.bigfig span:first-child { color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: .08em; }
+.bigfig b { font: 600 32px/1.2 var(--serif); font-variant-numeric: tabular-nums; }
+
+.foot { margin-top: 18px; padding-top: 18px; border-top: 1px solid var(--line); display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr)); gap: 24px; color: var(--muted); font-size: 13px; }
+.foot h2 { font-size: 12px; text-transform: uppercase; letter-spacing: .08em; margin: 0 0 6px; color: var(--ink); }
+.foot p { margin: 0 0 8px; max-width: 70ch; }
+
+.toast { position: fixed; left: 50%; bottom: calc(18px + env(safe-area-inset-bottom, 0px)); transform: translate(-50%, 20px); opacity: 0;
+  pointer-events: none; background: var(--ink); color: var(--bg); padding: 10px 16px; border-radius: var(--r); max-width: min(560px, calc(100vw - 32px));
+  transition: opacity .2s, transform .2s; z-index: 20; }
+.toast.show { opacity: 1; transform: translate(-50%, 0); }
+.toast-crit { background: var(--crit); color: var(--crit-bg); }
+.toast-warn { background: var(--warn); color: var(--warn-bg); }
+
+@media (max-width: 760px) {
+  .masthead { grid-template-columns: 1fr; }
+  .f-row { grid-template-columns: 1fr; gap: 4px; }
+}
+@media (prefers-reduced-motion: reduce) { .toast { transition: none; } }
+
+</style>
+</head>
+<body>
+<div class="page">
+  <header class="masthead">
+    <div class="mh-title">
+      <p class="eyebrow">Workforce reallocation tool</p>
+      <h1>Redeploy, Don’t Release</h1>
+      <p class="cite">Companion to Durojaiye, O. A. (2026). <i>Redeploy, don’t release</i> [White paper]. Zenodo. <a href="https://doi.org/10.5281/zenodo.23935255" target="_blank" rel="noopener noreferrer">doi.org/10.5281/zenodo.23935255</a></p>
+      <p class="cite">Excel template: <a href="https://doi.org/10.5281/zenodo.23935835" target="_blank" rel="noopener noreferrer">doi.org/10.5281/zenodo.23935835</a></p>
+    </div>
+    <div class="privacy" role="note">
+      <b>Private by design</b>
+      <span>Everything runs in your browser. Nothing you enter or open is uploaded, stored, or tracked. Closing the tab clears it, so save a project file to keep your work.</span>
+    </div>
+  </header>
+
+  <p class="preview-note" id="preview-note" hidden>You are viewing a preview. Opening files works here; saving and exporting work on the hosted site.</p>
+
+  <div class="toolbar" role="toolbar" aria-label="Project">
+    <div class="tb-group">
+      <button type="button" id="b-example">Worked example</button>
+      <button type="button" id="b-blank">Start blank</button>
+      <button type="button" id="b-open" class="primary">Open template or project…</button>
+      <input type="file" id="file" accept=".xlsx,.json" hidden>
+    </div>
+    <div class="tb-group">
+      <button type="button" id="b-save">Save project</button>
+      <label class="chk" for="incl-fair"><input type="checkbox" id="incl-fair"> Include fairness group data</label>
+      <button type="button" id="b-xlsx">Export results (.xlsx)</button>
+      <button type="button" id="b-csv">Placements (.csv)</button>
+    </div>
+  </div>
+
+  <div class="status" id="status" aria-live="polite"></div>
+
+  <nav class="tabs" role="tablist" aria-label="Steps"></nav>
+
+  <main id="panel" role="tabpanel" tabindex="-1"></main>
+
+  <footer class="foot">
+    <div>
+      <h2>Privacy</h2>
+      <p>This page has no server, database, account, cookies, or analytics. Your data stays in this browser tab. Files you open are read on your device, and files you save go only to your device. A content security policy blocks the page from sending data anywhere.</p>
+      <p>Do not enter protected characteristics, accommodation, or medical information. Fairness group labels belong only in the restricted Fairness review section.</p>
+    </div>
+    <div>
+      <h2>Use and license</h2>
+      <p>© 2026 Olufunke A. Durojaiye. Code licensed under the <a href="https://opensource.org/license/mit" target="_blank" rel="noopener noreferrer">MIT License</a>. Content licensed under <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener noreferrer">CC BY 4.0</a>. Please cite the paper when you use or adapt the tool.</p>
+      <p>This tool provides general information only and is not legal advice. Review criteria, results, and the fairness screen with counsel before use.</p>
+      <p class="mini">Web tool 1.0 · Calculations match template version 1.0 (November 2026).</p>
+    </div>
+  </footer>
+</div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+<script>
+/* SPDX-License-Identifier: MIT | Copyright (c) 2026 Olufunke A. Durojaiye */
+/* Redeploy, Don't Release: matching engine.
+   A direct port of the workbook formulas (Scoring, Matching, Calibration,
+   Fairness Review, Summary, Cost Estimate). Pure functions: no I/O. */
+var UNMATCHED = 'Unmatched – HR review';
+var MAX_CHOICES = 10;
+
+function lc(s) { return String(s == null ? '' : s).trim().toLowerCase(); }
+function str(s) { return String(s == null ? '' : s).trim(); }
+function num(v, d) {
+  if (v === '' || v == null) return d === undefined ? 0 : d;
+  var n = typeof v === 'number' ? v : parseFloat(String(v).replace(/[$,\s]/g, ''));
+  return isFinite(n) ? n : (d === undefined ? 0 : d);
+}
+function parseISO(s) {
+  var m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(str(s));
+  return m ? Date.UTC(+m[1], +m[2] - 1, +m[3]) : null;
+}
+function daysBetween(later, earlier) {
+  var a = parseISO(later), b = parseISO(earlier);
+  return a == null || b == null ? null : Math.round((a - b) / 86400000);
+}
+function same(a, b) { return Math.abs(a - b) < 1e-9; }
+
+function compute(S) {
+  var R = S.rules, out = { issues: [] };
+  var wP = num(R.weights.perf.w), wT = num(R.weights.tenure.w), wC = num(R.weights.conduct.w);
+  var missingPerf = num(R.missingPerf);
+
+  /* ---------- Scoring ---------- */
+  var scoring = [];
+  S.employees.forEach(function (e, idx) {
+    var id = str(e.id);
+    if (!id) return;
+    var inScope = lc(e.inScope) === 'y';
+    var days = str(e.hire) ? daysBetween(R.asOf, e.hire) : null;
+    var years = days == null ? null : Math.floor(days / 365.25);
+
+    var perf;
+    if (!str(e.band)) perf = missingPerf;
+    else {
+      var pb = R.perfBands.filter(function (b) { return str(b.label) && lc(b.label) === lc(e.band); })[0];
+      perf = pb ? num(pb.points) : missingPerf;
+    }
+
+    var tenurePts = 0, tenureIssue = false;
+    if (years != null) {
+      var hit = null;
+      R.tenure.forEach(function (t) { if (str(t.min) !== '' && num(t.min) <= years) hit = t; });
+      if (hit) tenurePts = num(hit.points); else tenureIssue = true;
+    }
+
+    var cRows = R.conduct, conduct = cRows.length ? num(cRows[0].points) : 0;
+    if (str(e.conduct)) {
+      var cr = cRows.filter(function (c) { return str(c.label) && lc(c.label) === lc(e.conduct); })[0];
+      if (cr) conduct = num(cr.points);
+    }
+
+    var total = perf * wP + tenurePts * wT + conduct * wC;
+    var tb;
+    if (R.tiebreak === 'Tenure (days)') tb = days == null ? 0 : days;
+    else if (R.tiebreak === 'Performance points then tenure') tb = perf * 100000 + (days == null ? 0 : days);
+    else tb = -num(e.draw);
+
+    scoring.push({ id: id, idx: idx, inScope: inScope, days: days, years: years, perf: perf,
+      tenurePts: tenurePts, conduct: conduct, total: total, tb: tb, tenureIssue: tenureIssue,
+      group: str(e.group), rank: null, tieDecided: null });
+  });
+
+  var ranked = scoring.filter(function (s) { return s.inScope; });
+  ranked.sort(function (a, b) {
+    if (!same(a.total, b.total)) return b.total - a.total;
+    if (!same(a.tb, b.tb)) return b.tb - a.tb;
+    return a.idx - b.idx;
+  });
+  ranked.forEach(function (s, i) {
+    s.rank = i + 1;
+    var prev = ranked[i - 1], next = ranked[i + 1];
+    s.tieDecided = !!((prev && same(prev.total, s.total)) || (next && same(next.total, s.total)));
+  });
+  out.scoring = scoring;
+
+  /* ---------- Lookups (Excel MATCH: first match, case-insensitive) ---------- */
+  var indexes = {};
+  function firstBy(arr, key, val) {
+    var tag = key + '|' + (arr === S.employees ? 'e' : arr === S.prefs ? 'p' : arr === S.needs ? 'n' : 'c');
+    var ix = indexes[tag];
+    if (!ix || ix.arr !== arr) {
+      ix = indexes[tag] = { arr: arr, map: Object.create(null) };
+      for (var i = 0; i < arr.length; i++) {
+        var k = lc(arr[i][key]);
+        if (k && !(k in ix.map)) ix.map[k] = arr[i];
+      }
+    }
+    var v = lc(val);
+    return v && v in ix.map ? ix.map[v] : null;
+  }
+  function choicesOf(p) {
+    var c = [];
+    for (var i = 1; i <= MAX_CHOICES; i++) c.push(str(p ? p['c' + i] : ''));
+    return c;
+  }
+
+  /* ---------- Matching (serial dictatorship) ---------- */
+  var placedCount = Object.create(null);
+  var matching = ranked.map(function (s) {
+    var emp = firstBy(S.employees, 'id', s.id);
+    var group = emp ? str(emp.group) : '';
+    var pref = firstBy(S.prefs, 'id', s.id);
+    var choices = choicesOf(pref);
+    var fits = choices.map(function (ch) {
+      if (!ch) return false;
+      var need = firstBy(S.needs, 'name', ch);
+      if (!need) return false;
+      var taken = placedCount[lc(ch)] || 0;
+      if (!(num(need.seats) - taken > 0)) return false;
+      var elig = str(need.eligible);
+      if (lc(elig) === 'all') return true;
+      var hay = (',' + elig.replace(/ /g, '') + ',').toLowerCase();
+      var needle = (',' + group.replace(/ /g, '') + ',').toLowerCase();
+      return hay.indexOf(needle) !== -1;
+    });
+    var k = fits.indexOf(true);
+    var placement = k === -1 ? UNMATCHED : choices[k];
+    placedCount[lc(placement)] = (placedCount[lc(placement)] || 0) + 1;
+    return { order: s.rank, id: s.id, total: s.total, group: group, choices: choices,
+      fits: fits, placement: placement, choiceReceived: k === -1 ? null : k + 1, s: s };
+  });
+  out.matching = matching;
+
+  /* ---------- Calibration ---------- */
+  var ov = S.overrides || {};
+  var calibration = matching.map(function (m) {
+    var o = Object.prototype.hasOwnProperty.call(ov, lc(m.id)) ? ov[lc(m.id)] : {};
+    var overridePl = str(o.placement);
+    var final = overridePl || m.placement;
+    var changed = lc(final) !== lc(m.placement);
+    var pref = firstBy(S.prefs, 'id', m.id);
+    var fc = null;
+    if (pref) {
+      var ch = choicesOf(pref);
+      for (var i = 0; i < ch.length; i++) if (ch[i] && lc(ch[i]) === lc(final)) { fc = i + 1; break; }
+    }
+    var doc = '';
+    if (changed) doc = (!str(o.reason) || !str(o.approver) || !str(o.date)) ? 'Missing reason/approver/date' : 'OK';
+    return { order: m.order, id: m.id, original: m.placement, override: overridePl, final: final,
+      changed: changed, reason: str(o.reason), approver: str(o.approver), date: str(o.date),
+      finalChoice: fc, doc: doc };
+  });
+  out.calibration = calibration;
+
+  /* ---------- Needs: seats filled ---------- */
+  var finalCount = Object.create(null);
+  calibration.forEach(function (c) { finalCount[lc(c.final)] = (finalCount[lc(c.final)] || 0) + 1; });
+  out.needs = S.needs.map(function (n) {
+    if (!str(n.name)) return { filled: null, remaining: null };
+    var filled = finalCount[lc(n.name)] || 0;
+    return { filled: filled, remaining: num(n.seats) - filled };
+  });
+
+  /* ---------- Preferences: status ---------- */
+  var prefIdCount = Object.create(null);
+  S.prefs.forEach(function (p) { var k = lc(p.id); if (k) prefIdCount[k] = (prefIdCount[k] || 0) + 1; });
+  out.prefStatus = S.prefs.map(function (p) {
+    if (!str(p.id)) return '';
+    if (!str(p.c1)) return 'Missing';
+    if (!firstBy(S.employees, 'id', p.id)) return 'ID not found';
+    if (prefIdCount[lc(p.id)] > 1) return 'Duplicate ID';
+    return 'OK';
+  });
+
+  /* ---------- Fairness Review ---------- */
+  var fav = R.favorable;
+  var fEntries = (S.fairness || []).map(function (f) {
+    if (!str(f.id)) return { favorable: null };
+    var c = firstBy(calibration, 'id', f.id);
+    if (!c) return { favorable: null };
+    var v;
+    if (fav === 'First choice') v = c.finalChoice === 1 ? 1 : 0;
+    else if (fav === 'First or second choice') v = c.finalChoice != null && c.finalChoice <= 2 ? 1 : 0;
+    else v = lc(c.final) === lc(UNMATCHED) ? 0 : 1;
+    return { favorable: v };
+  });
+  var groups = [], gIndex = Object.create(null);
+  (S.fairness || []).forEach(function (f, i) {
+    var g = str(f.group);
+    if (!g || fEntries[i].favorable == null) return;
+    var key = g.toLowerCase();
+    if (!(key in gIndex)) { gIndex[key] = groups.length; groups.push({ group: g, considered: 0, received: 0 }); }
+    var G = groups[gIndex[key]];
+    G.considered++; G.received += fEntries[i].favorable;
+  });
+  groups.forEach(function (G) { G.rate = G.considered ? G.received / G.considered : null; });
+  var maxRate = Math.max.apply(null, [0].concat(groups.map(function (G) { return G.rate || 0; })));
+  var thr = num(R.threshold, 0.8);
+  groups.forEach(function (G) {
+    G.impact = G.rate == null || maxRate === 0 ? null : G.rate / maxRate;
+    G.below = G.impact != null && G.impact < thr;
+  });
+  out.fairness = { entries: fEntries, groups: groups };
+
+  /* ---------- Review requests ---------- */
+  out.reviewDays = (S.reviews || []).map(function (r) {
+    var d = daysBetween(r.resolved, r.received);
+    return d == null ? null : d;
+  });
+
+  /* ---------- Cost estimate ---------- */
+  var C = S.cost;
+  var perEmp = num(C.severance) + num(C.recruiting) + num(C.onboarding) + num(C.ramp)
+             - num(C.training) - num(C.transition) - num(C.admin);
+  var adjusted = num(C.count) * (1 - num(C.attrition));
+  out.cost = { perEmployee: perEmp, adjusted: adjusted, total: perEmp * adjusted };
+
+  /* ---------- Summary ---------- */
+  var withId = S.employees.filter(function (e) { return str(e.id); });
+  var n = calibration.length;
+  var prefIds = Object.create(null);
+  S.prefs.forEach(function (p) { if (str(p.id)) prefIds[lc(p.id)] = 1; });
+  var placed = calibration.filter(function (c) { return lc(c.final) !== lc(UNMATCHED); }).length;
+  out.summary = {
+    inScope: withId.filter(function (e) { return lc(e.inScope) === 'y'; }).length,
+    openSeats: S.needs.reduce(function (a, x) { return a + (str(x.name) ? num(x.seats) : 0); }, 0),
+    notVerified: withId.filter(function (e) { return lc(e.check) !== 'verified'; }).length,
+    noPrefs: withId.filter(function (e) { return lc(e.inScope) === 'y' && !prefIds[lc(e.id)]; }).length,
+    rulesApproved: !!(str(R.signoff.by) && str(R.signoff.date)),
+    placed: placed,
+    unmatched: n - placed,
+    firstRate: n ? calibration.filter(function (c) { return c.finalChoice === 1; }).length / n : null,
+    firstSecondRate: n ? calibration.filter(function (c) { return c.finalChoice === 1 || c.finalChoice === 2; }).length / n : null,
+    tiebreakShare: n ? ranked.filter(function (s) { return s.tieDecided; }).length / n : null,
+    overrideRate: n ? calibration.filter(function (c) { return c.changed; }).length / n : null,
+    missingDocs: calibration.filter(function (c) { return c.doc.indexOf('Missing') === 0; }).length,
+    overfilled: out.needs.filter(function (x) { return x.remaining != null && x.remaining < 0; }).length,
+    belowThreshold: groups.filter(function (G) { return G.below; }).length,
+    reviewsReceived: (S.reviews || []).filter(function (r) { return str(r.id); }).length,
+    reviewsPending: (S.reviews || []).filter(function (r) { return lc(r.outcome) === 'pending'; }).length,
+    reviewsChanged: (S.reviews || []).filter(function (r) { return lc(r.outcome) === 'placement changed'; }).length,
+    avoidedCost: out.cost.total,
+    tenureIssues: scoring.filter(function (s) { return s.tenureIssue || (s.days != null && s.days < 0); }).length,
+    missingHire: scoring.filter(function (s) { return s.days == null; }).length
+  };
+  return out;
+}
+
+if (typeof module !== 'undefined') module.exports = { compute: compute, UNMATCHED: UNMATCHED, num: num };
+
+/* SPDX-License-Identifier: MIT AND CC-BY-4.0 | Copyright (c) 2026 Olufunke A. Durojaiye
+   Code: MIT. Worked example data adapted from Appendix A of Durojaiye (2026): CC BY 4.0. */
+/* Default rules and the worked example (Appendix A of the paper). */
+function defaultRules() {
+  return {
+    asOf: '2026-10-01',
+    tiebreak: 'Tenure (days)',
+    missingPerf: '1',
+    favorable: 'First choice',
+    threshold: '0.8',
+    weights: {
+      perf: { w: '1', reason: 'Example: recent performance indicates readiness to perform in a new team.' },
+      tenure: { w: '1', reason: 'Example: recognizes service; note tenure can correlate with age – test effects.' },
+      conduct: { w: '1', reason: 'Example: documented conduct issues relevant to the role.' }
+    },
+    perfBands: [
+      { label: 'Top rating band', points: '2' },
+      { label: 'Middle rating band', points: '1' },
+      { label: 'Lowest rating band', points: '0' }
+    ],
+    conduct: [
+      { label: 'No warning', points: '2' },
+      { label: 'Verbal warning', points: '1' },
+      { label: 'Written or final warning', points: '0' }
+    ],
+    tenure: [
+      { min: '0', points: '0' },
+      { min: '2', points: '1' },
+      { min: '5', points: '2' }
+    ],
+    signoff: { by: '', date: '', counsel: '' }
+  };
+}
+function defaultCost() {
+  return { severance: '6000', recruiting: '4000', onboarding: '5000', ramp: '7000',
+    training: '3000', transition: '2000', admin: '1000', count: '100', attrition: '0' };
+}
+function blankState() {
+  return { version: 1, rules: defaultRules(), needs: [], employees: [], prefs: [],
+    overrides: {}, reviews: [], fairness: [], cost: defaultCost() };
+}
+function exampleState() {
+  var S = blankState();
+  var start = '2026-11-16';
+  S.needs = [
+    { name: 'Department 1', dept: 'Department 1', shift: 'Day', site: 'Site A', seats: '2', eligible: 'All', req: 'Example: completes standard onboarding in week 1', start: start },
+    { name: 'Department 2', dept: 'Department 2', shift: 'Day', site: 'Site A', seats: '2', eligible: 'All', req: 'Example: forklift certification (training provided)', start: start },
+    { name: 'Department 3', dept: 'Department 3', shift: 'Night', site: 'Site A', seats: '1', eligible: 'All', req: 'Example: night-shift availability', start: start }
+  ];
+  function emp(id, band, hire, conduct, draw) {
+    return { id: id, role: 'Associate', dept: 'Department 4', group: 'General', inScope: 'Y',
+      check: 'Verified', band: band, hire: hire, conduct: conduct, draw: draw, notes: '' };
+  }
+  S.employees = [
+    emp('A', 'Top rating band', '2018-10-23', 'No warning', '0.62'),
+    emp('B', 'Top rating band', '2023-06-19', 'No warning', '0.15'),
+    emp('C', 'Middle rating band', '2020-12-31', 'No warning', '0.48'),
+    emp('D', 'Middle rating band', '2024-01-05', 'Verbal warning', '0.91'),
+    emp('E', 'Top rating band', '2025-08-27', 'Verbal warning', '0.27')
+  ];
+  function pref(id, a, b, c) {
+    var p = { id: id, date: '2026-10-20' };
+    for (var i = 1; i <= 10; i++) p['c' + i] = '';
+    p.c1 = a; p.c2 = b; p.c3 = c;
+    return p;
+  }
+  S.prefs = [
+    pref('A', 'Department 1', 'Department 2', 'Department 3'),
+    pref('B', 'Department 1', 'Department 3', 'Department 2'),
+    pref('C', 'Department 1', 'Department 2', 'Department 3'),
+    pref('D', 'Department 2', 'Department 1', 'Department 3'),
+    pref('E', 'Department 2', 'Department 3', 'Department 1')
+  ];
+  S.fairness = [
+    { id: 'A', group: '40 and over' }, { id: 'B', group: 'Under 40' }, { id: 'C', group: '40 and over' },
+    { id: 'D', group: 'Under 40' }, { id: 'E', group: 'Under 40' }
+  ];
+  return S;
+}
+if (typeof module !== 'undefined') module.exports = { exampleState: exampleState, blankState: blankState };
+
+/* SPDX-License-Identifier: MIT | Copyright (c) 2026 Olufunke A. Durojaiye */
+/* Minimal, dependency-free .xlsx reader and writer.
+   Reading uses the browser's built-in DecompressionStream; nothing leaves the device. */
+var XLSX_LIMIT = 15 * 1024 * 1024;
+
+function zipRead(buf) {
+  var dv = new DataView(buf), u8 = new Uint8Array(buf), eocd = -1;
+  for (var i = buf.byteLength - 22; i >= Math.max(0, buf.byteLength - 66000); i--) {
+    if (dv.getUint32(i, true) === 0x06054b50) { eocd = i; break; }
+  }
+  if (eocd < 0) throw new Error('This file is not a valid .xlsx workbook.');
+  var count = dv.getUint16(eocd + 10, true), p = dv.getUint32(eocd + 16, true), entries = {};
+  var dec = new TextDecoder();
+  for (var n = 0; n < count; n++) {
+    if (dv.getUint32(p, true) !== 0x02014b50) throw new Error('The workbook is damaged (bad directory).');
+    var method = dv.getUint16(p + 10, true), csize = dv.getUint32(p + 20, true);
+    var nlen = dv.getUint16(p + 28, true), xlen = dv.getUint16(p + 30, true), clen = dv.getUint16(p + 32, true);
+    var off = dv.getUint32(p + 42, true);
+    var name = dec.decode(u8.subarray(p + 46, p + 46 + nlen));
+    entries[name] = { method: method, csize: csize, off: off };
+    p += 46 + nlen + xlen + clen;
+  }
+  return {
+    has: function (name) { return name in entries; },
+    text: async function (name) {
+      var e = entries[name];
+      if (!e) return null;
+      var lnl = dv.getUint16(e.off + 26, true), lxl = dv.getUint16(e.off + 28, true);
+      var start = e.off + 30 + lnl + lxl, data = u8.slice(start, start + e.csize);
+      if (e.method === 0) return dec.decode(data);
+      if (e.method !== 8) throw new Error('Unsupported compression in workbook.');
+      if (typeof DecompressionStream === 'undefined') throw new Error('This browser cannot read .xlsx files. Use a current version of Chrome, Edge, Firefox or Safari.');
+      var ds = new Blob([data]).stream().pipeThrough(new DecompressionStream('deflate-raw'));
+      return await new Response(ds).text();
+    }
+  };
+}
+
+function colIndex(ref) {
+  var m = /^([A-Z]+)(\d+)$/.exec(ref), c = 0;
+  for (var i = 0; i < m[1].length; i++) c = c * 26 + (m[1].charCodeAt(i) - 64);
+  return { c: c, r: +m[2] };
+}
+
+async function readWorkbook(buf) {
+  var z = zipRead(buf), xml = new DOMParser();
+  function parse(t) { return xml.parseFromString(t, 'application/xml'); }
+  function tAll(node) { var s = ''; node.querySelectorAll('t').forEach(function (t) { s += t.textContent; }); return s; }
+  var shared = [];
+  var sst = await z.text('xl/sharedStrings.xml');
+  if (sst) parse(sst).querySelectorAll('si').forEach(function (si) { shared.push(tAll(si)); });
+  var wb = parse(await z.text('xl/workbook.xml'));
+  var rels = parse(await z.text('xl/_rels/workbook.xml.rels')), relMap = {};
+  rels.querySelectorAll('Relationship').forEach(function (r) { relMap[r.getAttribute('Id')] = r.getAttribute('Target'); });
+  var sheets = {};
+  var list = wb.querySelectorAll('sheet');
+  for (var i = 0; i < list.length; i++) {
+    var s = list[i], rid = s.getAttribute('r:id') || s.getAttributeNS('http://schemas.openxmlformats.org/officeDocument/2006/relationships', 'id');
+    var target = relMap[rid] || '';
+    target = target.replace(/^\//, '').replace(/^xl\//, '');
+    var t = await z.text('xl/' + target);
+    if (!t) continue;
+    var cells = {};
+    parse(t).querySelectorAll('sheetData c').forEach(function (c) {
+      var type = c.getAttribute('t'), v = c.querySelector('v'), val;
+      if (type === 's') val = v ? shared[+v.textContent] : '';
+      else if (type === 'inlineStr') val = tAll(c);
+      else if (type === 'str' || type === 'e') val = v ? v.textContent : '';
+      else if (type === 'b') val = v ? (v.textContent === '1') : '';
+      else val = v ? +v.textContent : '';
+      cells[c.getAttribute('r')] = val;
+    });
+    sheets[s.getAttribute('name')] = cells;
+  }
+  return sheets;
+}
+
+/* Map the published template layout onto the tool's project format. */
+function templateToState(sheets) {
+  var need = ['Rules', 'Needs', 'Employees', 'Preferences'];
+  need.forEach(function (n) {
+    if (!sheets[n]) throw new Error('This workbook is missing the "' + n + '" tab. Import the Redeploy, Don’t Release template.');
+  });
+  function g(sh, ref) { var v = (sheets[sh] || {})[ref]; return v == null ? '' : v; }
+  function s(sh, ref) { var v = g(sh, ref); return typeof v === 'boolean' ? (v ? 'TRUE' : 'FALSE') : String(v).trim(); }
+  function d(sh, ref) {
+    var v = g(sh, ref);
+    if (typeof v === 'number' && v > 0) {
+      var dt = new Date(Date.UTC(1899, 11, 30) + Math.round(v) * 86400000);
+      return dt.toISOString().slice(0, 10);
+    }
+    v = String(v).trim();
+    var m = /^(\d{4})-(\d{2})-(\d{2})/.exec(v);
+    if (m) return m[0];
+    m = /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/.exec(v);
+    if (m) return m[3] + '-' + ('0' + m[1]).slice(-2) + '-' + ('0' + m[2]).slice(-2);
+    return '';
+  }
+  function nstr(sh, ref) { var v = g(sh, ref); return v === '' ? '' : String(v); }
+  var S = blankState(), R = S.rules;
+  R.asOf = d('Rules', 'C5'); R.tiebreak = s('Rules', 'C6') || R.tiebreak; R.missingPerf = nstr('Rules', 'C7');
+  R.favorable = s('Rules', 'C8') || R.favorable; R.threshold = nstr('Rules', 'C9') || '0.8';
+  R.weights.perf = { w: nstr('Rules', 'C13'), reason: s('Rules', 'D13') };
+  R.weights.tenure = { w: nstr('Rules', 'C14'), reason: s('Rules', 'D14') };
+  R.weights.conduct = { w: nstr('Rules', 'C15'), reason: s('Rules', 'D15') };
+  function table(r0, r1, a, b, ka, kb) {
+    var out = [];
+    for (var r = r0; r <= r1; r++) {
+      var x = s('Rules', a + r), y = nstr('Rules', b + r);
+      if (x !== '' || y !== '') { var o = {}; o[ka] = x; o[kb] = y; out.push(o); }
+    }
+    return out;
+  }
+  R.perfBands = table(19, 23, 'B', 'C', 'label', 'points');
+  R.conduct = table(27, 31, 'B', 'C', 'label', 'points');
+  R.tenure = table(35, 39, 'B', 'C', 'min', 'points');
+  R.signoff = { by: s('Rules', 'C43'), date: d('Rules', 'C44'), counsel: s('Rules', 'C45') };
+
+  function rows(sheet, from, to, test) {
+    var out = [];
+    for (var r = from; r <= to; r++) if (test(r)) out.push(r);
+    return out;
+  }
+  var needsEnd = 5;
+  while (needsEnd < 500 && s('Needs', 'A' + needsEnd).toLowerCase() !== 'total') needsEnd++;
+  S.needs = rows('Needs', 5, needsEnd - 1, function (r) { return s('Needs', 'A' + r) !== ''; }).map(function (r) {
+    return { name: s('Needs', 'A' + r), dept: s('Needs', 'B' + r), shift: s('Needs', 'C' + r), site: s('Needs', 'D' + r),
+      seats: nstr('Needs', 'E' + r), eligible: s('Needs', 'F' + r), req: s('Needs', 'G' + r), start: d('Needs', 'H' + r) };
+  });
+  S.employees = rows('Employees', 5, 2004, function (r) { return s('Employees', 'A' + r) !== ''; }).map(function (r) {
+    return { id: s('Employees', 'A' + r), role: s('Employees', 'B' + r), dept: s('Employees', 'C' + r), group: s('Employees', 'D' + r),
+      inScope: s('Employees', 'E' + r), check: s('Employees', 'F' + r), band: s('Employees', 'G' + r), hire: d('Employees', 'H' + r),
+      conduct: s('Employees', 'I' + r), draw: nstr('Employees', 'J' + r), notes: s('Employees', 'K' + r) };
+  });
+  var cols = 'BCDEFGHIJK';
+  S.prefs = rows('Preferences', 5, 2004, function (r) { return s('Preferences', 'A' + r) !== ''; }).map(function (r) {
+    var p = { id: s('Preferences', 'A' + r), date: d('Preferences', 'L' + r) };
+    for (var i = 0; i < 10; i++) p['c' + (i + 1)] = s('Preferences', cols[i] + r);
+    return p;
+  });
+  for (var r = 5; r <= 504; r++) {
+    var id = s('Calibration', 'M' + r);
+    if (!id || /^(__proto__|constructor|prototype)$/i.test(id) || Object.prototype.hasOwnProperty.call(S.overrides, id.toLowerCase())) continue;
+    S.overrides[id.toLowerCase()] = { placement: s('Calibration', 'N' + r), reason: s('Calibration', 'O' + r),
+      approver: s('Calibration', 'P' + r), date: d('Calibration', 'Q' + r) };
+  }
+  S.reviews = rows('Review Requests', 5, 1004, function (r) {
+    return s('Review Requests', 'A' + r) !== '' && 'BCDEFG'.split('').some(function (c) { return s('Review Requests', c + r) !== ''; });
+  }).map(function (r) {
+    return { id: s('Review Requests', 'A' + r), received: d('Review Requests', 'B' + r), type: s('Review Requests', 'C' + r),
+      desc: s('Review Requests', 'D' + r), reviewer: s('Review Requests', 'E' + r), outcome: s('Review Requests', 'F' + r),
+      resolved: d('Review Requests', 'G' + r) };
+  });
+  S.fairness = rows('Fairness Review', 5, 2004, function (r) { return s('Fairness Review', 'A' + r) !== ''; }).map(function (r) {
+    return { id: s('Fairness Review', 'A' + r), group: s('Fairness Review', 'B' + r) };
+  });
+  if (sheets['Cost Estimate']) {
+    var C = S.cost;
+    C.severance = nstr('Cost Estimate', 'C5'); C.recruiting = nstr('Cost Estimate', 'C6'); C.onboarding = nstr('Cost Estimate', 'C7');
+    C.ramp = nstr('Cost Estimate', 'C8'); C.training = nstr('Cost Estimate', 'C9'); C.transition = nstr('Cost Estimate', 'C10');
+    C.admin = nstr('Cost Estimate', 'C11'); C.count = nstr('Cost Estimate', 'C16'); C.attrition = nstr('Cost Estimate', 'C17');
+  }
+  return S;
+}
+
+/* ---------- Writer: stored (uncompressed) zip, inline strings ---------- */
+var CRC_TABLE = (function () {
+  var t = new Uint32Array(256);
+  for (var n = 0; n < 256; n++) { var c = n; for (var k = 0; k < 8; k++) c = c & 1 ? 0xEDB88320 ^ (c >>> 1) : c >>> 1; t[n] = c >>> 0; }
+  return t;
+})();
+function crc32(u8) { var c = 0xFFFFFFFF; for (var i = 0; i < u8.length; i++) c = CRC_TABLE[(c ^ u8[i]) & 0xFF] ^ (c >>> 8); return (c ^ 0xFFFFFFFF) >>> 0; }
+
+function zipWrite(files) {
+  var enc = new TextEncoder(), parts = [], central = [], offset = 0;
+  files.forEach(function (f) {
+    var name = enc.encode(f.name), data = enc.encode(f.text), crc = crc32(data);
+    var h = new DataView(new ArrayBuffer(30));
+    h.setUint32(0, 0x04034b50, true); h.setUint16(4, 20, true); h.setUint16(8, 0, true);
+    h.setUint32(14, crc, true); h.setUint32(18, data.length, true); h.setUint32(22, data.length, true);
+    h.setUint16(26, name.length, true);
+    parts.push(new Uint8Array(h.buffer), name, data);
+    var c = new DataView(new ArrayBuffer(46));
+    c.setUint32(0, 0x02014b50, true); c.setUint16(4, 20, true); c.setUint16(6, 20, true);
+    c.setUint32(16, crc, true); c.setUint32(20, data.length, true); c.setUint32(24, data.length, true);
+    c.setUint16(28, name.length, true); c.setUint32(42, offset, true);
+    central.push(new Uint8Array(c.buffer), name);
+    offset += 30 + name.length + data.length;
+  });
+  var csize = central.reduce(function (a, b) { return a + b.length; }, 0);
+  var e = new DataView(new ArrayBuffer(22));
+  e.setUint32(0, 0x06054b50, true); e.setUint16(8, files.length, true); e.setUint16(10, files.length, true);
+  e.setUint32(12, csize, true); e.setUint32(16, offset, true);
+  return new Blob(parts.concat(central, [new Uint8Array(e.buffer)]),
+    { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+}
+
+function xesc(s) {
+  return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; })
+    .replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/g, '');
+}
+function colName(i) { var s = ''; i++; while (i > 0) { var m = (i - 1) % 26; s = String.fromCharCode(65 + m) + s; i = Math.floor((i - 1) / 26); } return s; }
+
+/* sheets: [{name, rows:[[...]], header: true}] ; cells: number | string | {v, pct:true} */
+function buildXlsx(sheets) {
+  var files = [];
+  var ct = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">' +
+    '<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/>' +
+    '<Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>' +
+    '<Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>' +
+    sheets.map(function (s, i) { return '<Override PartName="/xl/worksheets/sheet' + (i + 1) + '.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>'; }).join('') +
+    '</Types>';
+  files.push({ name: '[Content_Types].xml', text: ct });
+  files.push({ name: '_rels/.rels', text: '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>' });
+  files.push({ name: 'xl/workbook.xml', text: '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets>' +
+    sheets.map(function (s, i) { return '<sheet name="' + xesc(s.name.slice(0, 31)) + '" sheetId="' + (i + 1) + '" r:id="rId' + (i + 1) + '"/>'; }).join('') + '</sheets></workbook>' });
+  files.push({ name: 'xl/_rels/workbook.xml.rels', text: '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">' +
+    sheets.map(function (s, i) { return '<Relationship Id="rId' + (i + 1) + '" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet' + (i + 1) + '.xml"/>'; }).join('') +
+    '<Relationship Id="rId' + (sheets.length + 1) + '" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/></Relationships>' });
+  files.push({ name: 'xl/styles.xml', text: '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">' +
+    '<fonts count="2"><font><sz val="11"/><name val="Calibri"/></font><font><b/><sz val="11"/><name val="Calibri"/></font></fonts>' +
+    '<fills count="2"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill></fills>' +
+    '<borders count="1"><border><left/><right/><top/><bottom/><diagonal/></border></borders>' +
+    '<cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs>' +
+    '<cellXfs count="3"><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/><xf numFmtId="0" fontId="1" fillId="0" borderId="0" xfId="0" applyFont="1"/><xf numFmtId="10" fontId="0" fillId="0" borderId="0" xfId="0" applyNumberFormat="1"/></cellXfs>' +
+    '<cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles></styleSheet>' });
+  sheets.forEach(function (s, i) {
+    var maxCols = s.rows.reduce(function (a, r) { return Math.max(a, r.length); }, 1);
+    var colsXml = '<cols>' + Array.from({ length: maxCols }, function (_, k) {
+      var w = s.rows.reduce(function (a, r) { var v = r[k]; v = v && typeof v === 'object' ? v.v : v; return Math.max(a, String(v == null ? '' : v).length); }, 8);
+      return '<col min="' + (k + 1) + '" max="' + (k + 1) + '" width="' + Math.min(60, w + 2) + '" customWidth="1"/>';
+    }).join('') + '</cols>';
+    var body = s.rows.map(function (row, r) {
+      return '<row r="' + (r + 1) + '">' + row.map(function (cell, c) {
+        var ref = colName(c) + (r + 1), bold = s.header && r === 0 ? ' s="1"' : '';
+        var v = cell, pct = false;
+        if (v && typeof v === 'object') { pct = !!v.pct; v = v.v; }
+        if (v == null || v === '') return '';
+        if (typeof v === 'number' && isFinite(v)) return '<c r="' + ref + '"' + (pct ? ' s="2"' : bold) + '><v>' + v + '</v></c>';
+        return '<c r="' + ref + '" t="inlineStr"' + bold + '><is><t xml:space="preserve">' + xesc(v) + '</t></is></c>';
+      }).join('') + '</row>';
+    }).join('');
+    files.push({ name: 'xl/worksheets/sheet' + (i + 1) + '.xml', text: '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">' + colsXml + '<sheetData>' + body + '</sheetData></worksheet>' });
+  });
+  return zipWrite(files);
+}
+
+/* SPDX-License-Identifier: MIT | Copyright (c) 2026 Olufunke A. Durojaiye */
+/* Redeploy, Don't Release: web tool UI. All processing happens in this page. */
+(function () {
+  'use strict';
+  var PREVIEW = !!window.__RDR_PREVIEW;
+  var state = exampleState();
+  var dirty = false, current = 'match', calcs = [], pending = [], toastTimer = null;
+  var panel = document.getElementById('panel');
+  var MAX_ROWS = 5000, PAGE = 100, pageOf = {};
+  var BAD_KEYS = { '__proto__': 1, 'constructor': 1, 'prototype': 1 };
+  function pageCtl(list, total) {
+    if (total <= PAGE) return '';
+    var p = Math.min(pageOf[list] || 0, Math.ceil(total / PAGE) - 1), from = p * PAGE + 1, to = Math.min(total, from + PAGE - 1);
+    return '<span class="pager"><button class="btn-sm" type="button" data-act="page" data-list="' + list + '" data-p="' + (p - 1) + '"' + (p === 0 ? ' disabled' : '') + '>Previous</button>' +
+      '<span>Rows ' + from + '\u2013' + to + ' of ' + total + '</span><button class="btn-sm" type="button" data-act="page" data-list="' + list + '" data-p="' + (p + 1) + '"' + (to >= total ? ' disabled' : '') + '>Next</button></span>';
+  }
+  function pageRange(list, total) {
+    var p = Math.max(0, Math.min(pageOf[list] || 0, Math.ceil(total / PAGE) - 1));
+    pageOf[list] = p;
+    return [p * PAGE, Math.min(total, p * PAGE + PAGE)];
+  }
+
+  /* ---------- helpers ---------- */
+  function esc(s) {
+    return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+    });
+  }
+  function lcs(s) { return String(s == null ? '' : s).trim().toLowerCase(); }
+  function pct(x) { return x == null ? '–' : (Math.round(x * 1000) / 10) + '%'; }
+  function money(x) { return x == null || !isFinite(x) ? '–' : x.toLocaleString('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }); }
+  function n2(x) { return x == null || x === '' ? '–' : (Math.round(x * 100) / 100).toLocaleString('en-US'); }
+  function calc(fn) { pending.push(fn); return '<span class="calc" data-c="' + (pending.length - 1) + '"></span>'; }
+  function pill(kind, text) { return '<span class="pill pill-' + kind + '">' + esc(text) + '</span>'; }
+  function fid(path) { return 'f-' + path.replace(/[^A-Za-z0-9_-]/g, '_'); }
+  function today() { var d = new Date(); return d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2); }
+  function getPath(path) {
+    var o = state, parts = path.split('.');
+    for (var i = 0; i < parts.length; i++) { if (o == null) return ''; o = o[parts[i]]; }
+    return o == null ? '' : o;
+  }
+  function setPath(path, v) {
+    var o = state, parts = path.split('.');
+    for (var i = 0; i < parts.length - 1; i++) o = o[parts[i]];
+    o[parts[parts.length - 1]] = v;
+  }
+  function toast(msg, kind) {
+    var t = document.getElementById('toast');
+    t.textContent = msg; t.className = 'toast show' + (kind ? ' toast-' + kind : '');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function () { t.className = 'toast'; }, 5200);
+  }
+  function normDate(v) {
+    v = String(v).trim();
+    var m = /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/.exec(v);
+    if (m) return m[3] + '-' + ('0' + m[1]).slice(-2) + '-' + ('0' + m[2]).slice(-2);
+    m = /^(\d{4})-(\d{1,2})-(\d{1,2})/.exec(v);
+    if (m) return m[1] + '-' + ('0' + m[2]).slice(-2) + '-' + ('0' + m[3]).slice(-2);
+    return v;
+  }
+
+  /* ---------- form controls ---------- */
+  function input(path, type, label, extra) {
+    var v = getPath(path), id = fid(path);
+    var t = type === 'number' ? 'text" inputmode="decimal' : type;
+    return '<input class="in" id="' + id + '" type="' + t + '" data-path="' + esc(path) + '" value="' + esc(v) + '" aria-label="' + esc(label) + '"' + (extra || '') + '>';
+  }
+  function select(path, options, label) {
+    var v = String(getPath(path)), id = fid(path), found = false;
+    var opts = options.map(function (o) {
+      var sel = lcs(o) === lcs(v) && v !== '' ? (found = true, ' selected') : '';
+      return '<option value="' + esc(o) + '"' + sel + '>' + esc(o || '—') + '</option>';
+    });
+    if (v !== '' && !found) opts.push('<option value="' + esc(v) + '" selected>' + esc(v) + ' (not in list)</option>');
+    return '<select class="in" id="' + id + '" data-path="' + esc(path) + '" aria-label="' + esc(label) + '">' + opts.join('') + '</select>';
+  }
+
+  /* Editable grid. cols: {k,label,type,opts,size,calc} */
+  function grid(list, cols, opts) {
+    var rows = state[list] || getPath(list);
+    var keys = cols.filter(function (c) { return !c.calc; }).map(function (c) { return c.k; });
+    var h = '<div class="tbl-wrap"><table class="grid" data-list="' + list + '" data-keys="' + keys.join(',') + '"><thead><tr>' +
+      cols.map(function (c) { return '<th class="' + (c.calc ? 'th-out ' : '') + 'w-' + (c.size || 'm') + '" scope="col">' + esc(c.label) + '</th>'; }).join('') +
+      '<th class="w-x"><span class="sr">Remove</span></th></tr></thead><tbody>';
+    if (!rows.length) {
+      h += '<tr><td class="empty" colspan="' + (cols.length + 1) + '">' + esc(opts.empty) + '</td></tr>';
+    }
+    var rg = pageRange(list, rows.length);
+    rows.slice(rg[0], rg[1]).forEach(function (row, j) {
+      var i = rg[0] + j;
+      h += '<tr>' + cols.map(function (c) {
+        var path = list + '.' + i + '.' + c.k, label = c.label + ', row ' + (i + 1);
+        if (c.calc) return '<td class="out">' + calc(function (R) { return c.calc(R, i); }) + '</td>';
+        if (c.type === 'select') return '<td>' + select(path, [''].concat(c.opts()), label) + '</td>';
+        return '<td>' + input(path, c.type || 'text', label) + '</td>';
+      }).join('') + '<td><button class="x" type="button" data-act="del" data-list="' + list + '" data-i="' + i + '" aria-label="Remove row ' + (i + 1) + '">×</button></td></tr>';
+    });
+    h += '</tbody></table></div><div class="grid-foot"><button class="btn-sm" type="button" data-act="add" data-list="' + list + '">+ ' + esc(opts.add) + '</button>' + pageCtl(list, rows.length) +
+      '<span class="hint">Paste rows copied from Excel into any cell to fill several at once.</span></div>';
+    return h;
+  }
+  var NEW_ROW = {
+    needs: function () { return { name: '', dept: '', shift: '', site: '', seats: '', eligible: 'All', req: '', start: '' }; },
+    employees: function () { return { id: '', role: '', dept: '', group: '', inScope: 'Y', check: 'Pending', band: '', hire: '', conduct: '', draw: '', notes: '' }; },
+    prefs: function () { var p = { id: '', date: '' }; for (var i = 1; i <= 10; i++) p['c' + i] = ''; return p; },
+    reviews: function () { return { id: '', received: '', type: '', desc: '', reviewer: '', outcome: 'Pending', resolved: '' }; },
+    fairness: function () { return { id: '', group: '' }; },
+    'rules.perfBands': function () { return { label: '', points: '' }; },
+    'rules.conduct': function () { return { label: '', points: '' }; },
+    'rules.tenure': function () { return { min: '', points: '' }; }
+  };
+  function listRef(list) { return state[list] || getPath(list); }
+  function optionNames() { return state.needs.map(function (n) { return String(n.name).trim(); }).filter(Boolean); }
+
+  /* ---------- tabs ---------- */
+  var TABS = [
+    { id: 'need', n: '1', label: 'Define the need', render: renderNeed },
+    { id: 'rules', n: '2', label: 'Set the rules', render: renderRules },
+    { id: 'people', n: '3', label: 'Hear from employees', render: renderPeople },
+    { id: 'match', n: '4', label: 'Score and match', render: renderMatch },
+    { id: 'calibrate', n: '5', label: 'Calibrate', render: renderCalibrate },
+    { id: 'summary', n: '', label: 'Summary', render: renderSummary },
+    { id: 'cost', n: '', label: 'Cost estimate', render: renderCost }
+  ];
+
+  function head(title, lede) {
+    return '<header class="p-head"><h2>' + esc(title) + '</h2><p>' + lede + '</p></header>';
+  }
+
+  function renderNeed() {
+    return head('Define the need', 'One row per open option: a department, shift, or site. Option names must be unique; employees rank these names.') +
+      grid('needs', [
+        { k: 'name', label: 'Option (unique name)', size: 'l' },
+        { k: 'dept', label: 'Department' }, { k: 'shift', label: 'Shift', size: 's' }, { k: 'site', label: 'Site', size: 's' },
+        { k: 'seats', label: 'Open seats', type: 'number', size: 's' },
+        { k: 'eligible', label: 'Eligible role groups', size: 'l' },
+        { k: 'req', label: 'Role requirements', size: 'xl' },
+        { k: 'start', label: 'Start date', type: 'date' },
+        { k: 'filled', label: 'Seats filled', size: 's', calc: function (R, i) { var x = R.needs[i]; return x && x.filled != null ? String(x.filled) : ''; } },
+        { k: 'remaining', label: 'Remaining', size: 's', calc: function (R, i) {
+          var x = R.needs[i]; if (!x || x.remaining == null) return '';
+          return x.remaining < 0 ? pill('crit', x.remaining + ' over') : String(x.remaining);
+        } }
+      ], { add: 'Add option', empty: 'No open options yet. Add the first one below.' }) +
+      '<p class="note">Eligible role groups: enter <b>All</b>, or a comma-separated list that matches the Role group column on the Employees step, e.g. <i>Assembly, Logistics</i>.</p>';
+  }
+
+  function renderRules() {
+    var R = state.rules;
+    function row(label, ctrl, note) {
+      return '<div class="f-row"><label class="f-label" for="' + ctrl.id + '">' + esc(label) + '</label><div class="f-ctrl">' + ctrl.html + '</div><p class="f-note">' + esc(note) + '</p></div>';
+    }
+    function c(path, type, label) { return { id: fid(path), html: input(path, type, label) }; }
+    function s(path, o, label) { return { id: fid(path), html: select(path, o, label) }; }
+    var weights = ['perf', 'tenure', 'conduct'].map(function (k) {
+      var name = { perf: 'Performance', tenure: 'Tenure', conduct: 'Conduct record (current review period)' }[k];
+      return '<tr><th scope="row">' + esc(name) + '</th><td>' + input('rules.weights.' + k + '.w', 'number', name + ' weight') + '</td><td>' +
+        input('rules.weights.' + k + '.reason', 'text', name + ' business reason') + '</td><td class="out">' +
+        calc(function () { return String(state.rules.weights[k].reason).trim() ? '' : pill('warn', 'Reason required'); }) + '</td></tr>';
+    }).join('');
+    return head('Set the rules', 'Finalize and record every rule <b>before</b> reviewing any individual result. If a rule must change later, document why and rerun for everyone.') +
+      '<section class="block"><h3>General settings</h3>' +
+      row('As-of date for tenure', c('rules.asOf', 'date', 'As-of date'), 'Date used to calculate completed service.') +
+      row('Tiebreak rule', s('rules.tiebreak', ['Tenure (days)', 'Performance points then tenure', 'Random draw'], 'Tiebreak rule'), 'Chosen in advance. Check the Summary for the share of ranks decided by tiebreak.') +
+      row('Points if performance rating is missing', c('rules.missingPerf', 'number', 'Points if rating missing'), 'Example rule: a missing rating scores as the middle band.') +
+      row('Favorable outcome for fairness screen', s('rules.favorable', ['First choice', 'First or second choice', 'Any placement'], 'Favorable outcome'), 'Define the favorable outcome before running the screen.') +
+      row('Screening threshold (four-fifths rule)', c('rules.threshold', 'number', 'Screening threshold'), 'An impact ratio below this level triggers review. A screening measure, not proof of discrimination.') +
+      '</section><section class="block"><h3>Criteria and weights</h3><div class="tbl-wrap"><table class="grid"><thead><tr><th class="w-l" scope="col">Criterion</th><th class="w-s narrow" scope="col">Weight (multiplier)</th><th class="w-xl" scope="col">Business reason (required)</th><th class="w-m th-out" scope="col">Check</th></tr></thead><tbody>' + weights + '</tbody></table></div></section>' +
+      '<div class="cols3"><section class="block"><h3>Performance points</h3><p class="mini">Convert every rating system to these bands.</p>' +
+      grid('rules.perfBands', [{ k: 'label', label: 'Rating band', size: 'l' }, { k: 'points', label: 'Points', type: 'number', size: 's' }], { add: 'Add band', empty: 'No bands.' }) +
+      '</section><section class="block"><h3>Conduct points</h3><p class="mini">A blank conduct entry scores as the first row.</p>' +
+      grid('rules.conduct', [{ k: 'label', label: 'Conduct record', size: 'l' }, { k: 'points', label: 'Points', type: 'number', size: 's' }], { add: 'Add level', empty: 'No levels.' }) +
+      '</section><section class="block"><h3>Tenure points</h3><p class="mini">Minimum completed years, ascending. A missing hire date scores 0.</p>' +
+      grid('rules.tenure', [{ k: 'min', label: 'Min. years', type: 'number', size: 's' }, { k: 'points', label: 'Points', type: 'number', size: 's' }], { add: 'Add step', empty: 'No steps.' }) +
+      '</section></div><section class="block"><h3>Rules sign-off</h3>' +
+      row('Rules approved by', c('rules.signoff.by', 'text', 'Rules approved by'), 'Name and role of the approver.') +
+      row('Approval date', c('rules.signoff.date', 'date', 'Approval date'), 'Approve rules before reviewing results.') +
+      row('Counsel review completed', s('rules.signoff.counsel', ['', 'Y', 'N'], 'Counsel review completed'), 'Review criteria and results with counsel before use.') +
+      '</section>';
+  }
+
+  function renderPeople() {
+    var bands = function () { return state.rules.perfBands.map(function (b) { return b.label; }).filter(Boolean); };
+    var conducts = function () { return state.rules.conduct.map(function (b) { return b.label; }).filter(Boolean); };
+    var choiceCols = [];
+    for (var i = 1; i <= 10; i++) choiceCols.push({ k: 'c' + i, label: 'Choice ' + i, type: 'select', opts: optionNames });
+    return head('Hear from employees', 'One row per employee in the exercise. Do <b>not</b> enter protected characteristics, accommodation, or medical information here.') +
+      '<section class="block"><h3>Employees</h3>' +
+      grid('employees', [
+        { k: 'id', label: 'Employee ID', size: 's' }, { k: 'role', label: 'Current role' }, { k: 'dept', label: 'Current department' },
+        { k: 'group', label: 'Role group' }, { k: 'inScope', label: 'In scope', type: 'select', opts: function () { return ['Y', 'N']; }, size: 's' },
+        { k: 'check', label: 'Data check', type: 'select', opts: function () { return ['Verified', 'Pending', 'Issue']; } },
+        { k: 'band', label: 'Performance rating band', type: 'select', opts: bands, size: 'l' },
+        { k: 'hire', label: 'Hire date', type: 'date' },
+        { k: 'conduct', label: 'Conduct record', type: 'select', opts: conducts, size: 'l' },
+        { k: 'draw', label: 'Random draw value', type: 'number', size: 's' }, { k: 'notes', label: 'Notes', size: 'l' }
+      ], { add: 'Add employee', empty: 'No employees yet. Add rows, paste from Excel, or open the filled-in template.' }) +
+      '<p class="note">Random draw: generate the numbers once, enter them as fixed values, and record when and by whom.</p></section>' +
+      '<section class="block"><h3>Ranked preferences</h3><p class="mini">Ask employees to rank every option they would accept. Choices list the options from step 1.</p>' +
+      grid('prefs', [{ k: 'id', label: 'Employee ID', size: 's' }].concat(choiceCols, [
+        { k: 'date', label: 'Submitted', type: 'date' },
+        { k: 'status', label: 'Status', calc: function (R, i) {
+          var s = R.prefStatus[i]; if (!s) return '';
+          return s === 'OK' ? pill('ok', 'OK') : pill(s === 'Missing' ? 'warn' : 'crit', s);
+        } }
+      ]), { add: 'Add preferences', empty: 'No preferences yet.' }) + '</section>';
+  }
+
+  function checks(R) {
+    var m = R.summary, out = [];
+    var bad = R.prefStatus.filter(function (s) { return s && s !== 'OK'; }).length;
+    var noAsOf = !String(state.rules.asOf).trim();
+    if (noAsOf) out.push(pill('crit', 'As-of date missing in step 2'));
+    if (!m.rulesApproved) out.push(pill('warn', 'Rules not signed off'));
+    if (m.notVerified) out.push(pill('warn', m.notVerified + ' data checks not verified'));
+    if (m.noPrefs) out.push(pill('warn', m.noPrefs + ' with no preferences'));
+    if (bad) out.push(pill('crit', bad + ' preference rows need fixing'));
+    if (m.missingHire && !noAsOf) out.push(pill('warn', m.missingHire + ' missing hire date'));
+    if (m.tenureIssues) out.push(pill('crit', m.tenureIssues + ' tenure values out of range'));
+    if (!out.length) out.push(pill('ok', 'All data checks pass'));
+    return out.join(' ');
+  }
+
+  function renderMatch() {
+    return head('Score and match', 'Employees are ranked by total score, then the tiebreak. In rank order, each receives their highest-ranked choice that still has a seat and fits their role group (serial dictatorship).') +
+      '<div class="checks" aria-live="polite">' + calc(checks) + '</div>' +
+      '<section class="block"><h3>Seats by option</h3>' + calc(function (R) {
+        if (!state.needs.length) return '<p class="empty">Add open options in step 1.</p>';
+        return '<ul class="seats">' + state.needs.map(function (n, i) {
+          if (!String(n.name).trim()) return '';
+          var seats = Math.max(0, +n.seats || 0), f = R.needs[i].filled;
+          var orig = R.matching.filter(function (m) { return lcs(m.placement) === lcs(n.name); }).length;
+          return '<li><span class="s-name">' + esc(n.name) + '</span><progress max="' + Math.max(seats, f, 1) + '" value="' + f + '">' + f + ' of ' + seats + '</progress><span class="s-num">' + f + ' / ' + seats +
+            (f > seats ? ' ' + pill('crit', 'over') : '') + (orig !== f ? ' <span class="mini">(' + orig + ' before calibration)</span>' : '') + '</span></li>';
+        }).join('') + '</ul>';
+      }) + '</section>' +
+      '<section class="block"><h3>Rank and proposed placement</h3>' + calc(function (R) {
+        if (!R.matching.length) return '<p class="empty">No in-scope employees yet. Add employees in step 3.</p>';
+        var out = R.scoring.length - R.matching.length;
+        return '<div class="tbl-wrap"><table class="grid ro"><thead><tr><th scope="col">Order</th><th scope="col">Employee</th><th scope="col">Total score</th><th scope="col">Perf.</th><th scope="col">Tenure</th><th scope="col">Conduct</th><th scope="col">Tenure (days)</th><th scope="col">Tiebreak value</th><th scope="col">Decided by tiebreak</th><th scope="col">Role group</th><th scope="col">Proposed placement</th><th scope="col">Choice received</th></tr></thead><tbody>' +
+          R.matching.map(function (m) {
+            var s = m.s;
+            return '<tr><td class="num">' + m.order + '</td><td><b>' + esc(m.id) + '</b></td><td class="num strong">' + n2(s.total) + '</td><td class="num">' + n2(s.perf) + '</td><td class="num">' + n2(s.tenurePts) + '</td><td class="num">' + n2(s.conduct) +
+              '</td><td class="num">' + (s.days == null ? (String(state.rules.asOf).trim() ? pill('warn', 'No hire date') : '\u2013') : s.days.toLocaleString('en-US')) + '</td><td class="num">' + n2(s.tb) + '</td><td>' + (s.tieDecided ? 'Yes' : 'No') +
+              '</td><td>' + esc(m.group) + '</td><td>' + (m.choiceReceived ? esc(m.placement) : pill('crit', m.placement)) + '</td><td class="num">' + (m.choiceReceived ? ordinal(m.choiceReceived) : '–') + '</td></tr>';
+          }).join('') + '</tbody></table></div>' + (out ? '<p class="note">' + out + ' employee' + (out > 1 ? 's are' : ' is') + ' out of scope and not ranked.</p>' : '');
+      }) + '</section>';
+  }
+  function ordinal(n) { return n + (n === 1 ? 'st' : n === 2 ? 'nd' : n === 3 ? 'rd' : 'th'); }
+
+  function renderCalibrate() {
+    var R0 = compute(state);
+    var names = [''].concat(optionNames(), [UNMATCHED]);
+    function ovInput(id, k, type, label) {
+      var o = state.overrides[lcs(id)] || {}, v = o[k] || '', fidv = 'f-ov-' + k + '-' + lcs(id).replace(/[^a-z0-9_-]/g, '_');
+      if (k === 'placement') {
+        var found = false, opts = names.map(function (n) { var s = n && lcs(n) === lcs(v) ? (found = true, ' selected') : ''; return '<option value="' + esc(n) + '"' + s + '>' + esc(n || 'No override') + '</option>'; });
+        if (v && !found) opts.push('<option value="' + esc(v) + '" selected>' + esc(v) + ' (not in list)</option>');
+        return '<select class="in" id="' + fidv + '" data-ov="' + esc(id) + '" data-k="placement" aria-label="' + esc(label) + '">' + opts.join('') + '</select>';
+      }
+      return '<input class="in" id="' + fidv + '" type="' + type + '" data-ov="' + esc(id) + '" data-k="' + k + '" value="' + esc(v) + '" aria-label="' + esc(label) + '">';
+    }
+    var crg = pageRange('calib', R0.calibration.length);
+    var rows = R0.calibration.slice(crg[0], crg[1]).map(function (c, j) {
+      var i = crg[0] + j;
+      return '<tr><td class="num">' + c.order + '</td><td><b>' + esc(c.id) + '</b></td><td>' + esc(c.original) + '</td><td>' + ovInput(c.id, 'placement', '', 'Override placement for ' + c.id) +
+        '</td><td>' + ovInput(c.id, 'reason', 'text', 'Reason for change, ' + c.id) + '</td><td>' + ovInput(c.id, 'approver', 'text', 'Approver, ' + c.id) + '</td><td>' + ovInput(c.id, 'date', 'date', 'Override date, ' + c.id) +
+        '</td><td class="out">' + calc(function (R) { var x = R.calibration[i]; return x ? (lcs(x.final) === lcs(UNMATCHED) ? pill('crit', x.final) : '<b>' + esc(x.final) + '</b>') : ''; }) +
+        '</td><td class="out">' + calc(function (R) { var x = R.calibration[i]; return x && x.changed ? pill('info', 'Yes') : 'No'; }) +
+        '</td><td class="out num">' + calc(function (R) { var x = R.calibration[i]; return x ? (x.finalChoice ? ordinal(x.finalChoice) : 'Not ranked') : ''; }) +
+        '</td><td class="out">' + calc(function (R) { var x = R.calibration[i]; return !x || !x.doc ? '' : x.doc === 'OK' ? pill('ok', 'OK') : pill('crit', x.doc); }) + '</td></tr>';
+    }).join('');
+    return head('Calibrate', 'Review proposed placements. Every override needs a reason, an approver, and a date. Calibration should not become unstructured discretion.') +
+      '<section class="block"><h3>Placements and overrides</h3>' + (rows ? '<div class="tbl-wrap"><table class="grid"><thead><tr><th class="w-s" scope="col">Order</th><th class="w-s" scope="col">Employee</th><th class="w-m" scope="col">Original match</th><th class="w-l" scope="col">Override placement</th><th class="w-xl" scope="col">Reason for change</th><th class="w-m" scope="col">Approver</th><th class="w-m" scope="col">Date</th><th class="w-m th-out" scope="col">Final placement</th><th class="w-s th-out" scope="col">Changed</th><th class="w-s th-out" scope="col">Final choice</th><th class="w-m th-out" scope="col">Documentation</th></tr></thead><tbody>' + rows + '</tbody></table></div>' + (R0.calibration.length > PAGE ? '<div class="grid-foot">' + pageCtl('calib', R0.calibration.length) + '</div>' : '') : '<p class="empty">No ranked employees yet.</p>') + '</section>' +
+      '<section class="block"><h3>Review requests</h3><p class="mini">Log every employee request for review. Resolve before, or promptly after, release.</p>' +
+      grid('reviews', [
+        { k: 'id', label: 'Employee ID', size: 's' }, { k: 'received', label: 'Date received', type: 'date' },
+        { k: 'type', label: 'Concern type', type: 'select', opts: function () { return ['Data accuracy', 'Placement', 'Process', 'Other']; } },
+        { k: 'desc', label: 'Description', size: 'xl' }, { k: 'reviewer', label: 'Reviewer' },
+        { k: 'outcome', label: 'Outcome', type: 'select', size: 'l', opts: function () { return ['Pending', 'Upheld - no change', 'Data corrected - no change', 'Placement changed']; } },
+        { k: 'resolved', label: 'Date resolved', type: 'date' },
+        { k: 'days', label: 'Days to resolve', size: 's', calc: function (R, i) { var d = R.reviewDays[i]; return d == null ? '' : String(d); } }
+      ], { add: 'Log a review request', empty: 'No review requests logged.' }) + '</section>' +
+      '<section class="block restricted"><h3>Fairness review <span class="tag">HR or legal reviewers only</span></h3>' +
+      '<p class="mini">Adverse-impact screen before release. Group labels are used only here and never affect scoring or matching. They are left out of saved project files unless you choose to include them.</p>' +
+      '<div class="stack"><div class="stack">' + grid('fairness', [
+        { k: 'id', label: 'Employee ID', size: 's' }, { k: 'group', label: 'Group (reviewer entry)', size: 'l' },
+        { k: 'fav', label: 'Favorable (1/0)', size: 's', calc: function (R, i) { var e = R.fairness.entries[i]; return e && e.favorable != null ? String(e.favorable) : ''; } }
+      ], { add: 'Add reviewer entry', empty: 'No entries.' }) +
+      '<button class="btn-sm" type="button" data-act="fillFair">Add every ranked employee ID</button></div><div class="min0">' +
+      calc(function (R) {
+        var G = R.fairness.groups;
+        var head2 = '<p class="mini">Favorable outcome: <b>' + esc(state.rules.favorable) + '</b>. Threshold: <b>' + esc(state.rules.threshold) + '</b>. Change these in step 2.</p>';
+        if (!G.length) return head2 + '<p class="empty">Enter groups to run the screen.</p>';
+        return head2 + '<div class="tbl-wrap"><table class="grid ro"><thead><tr><th scope="col">Group</th><th scope="col">Considered</th><th scope="col">Favorable</th><th scope="col">Selection rate</th><th scope="col">Impact ratio</th><th scope="col">Screening result</th></tr></thead><tbody>' +
+          G.map(function (g) {
+            return '<tr><td>' + esc(g.group) + '</td><td class="num">' + g.considered + '</td><td class="num">' + g.received + '</td><td class="num">' + pct(g.rate) + '</td><td class="num">' + (g.impact == null ? '–' : g.impact.toFixed(2)) +
+              '</td><td>' + (g.impact == null ? '' : g.below ? pill('crit', 'Below threshold – review with counsel') : pill('ok', 'At or above threshold')) + '</td></tr>';
+          }).join('') + '</tbody></table></div><p class="note">Small groups produce unstable ratios. Treat the result as a prompt for review, not a finding.</p>';
+      }) + '</div></div></section>';
+  }
+
+  var MEASURES = [
+    ['Readiness'],
+    ['Employees in scope', function (m) { return [m.inScope, '']; }],
+    ['Open seats', function (m) { return [m.openSeats, m.openSeats < m.inScope ? 'warn' : '']; }, 'Compare with employees in scope.'],
+    ['Employees with data checks not verified', function (m) { return [m.notVerified, m.notVerified ? 'warn' : 'ok']; }, 'Should be 0 before release.'],
+    ['In-scope employees with no preferences submitted', function (m) { return [m.noPrefs, m.noPrefs ? 'warn' : 'ok']; }, 'Follow up before matching.'],
+    ['Rules approved (sign-off)', function (m) { return [m.rulesApproved ? 'Yes' : 'No', m.rulesApproved ? 'ok' : 'warn']; }, 'Approve rules before reviewing results.'],
+    ['Outcomes'],
+    ['Employees placed', function (m) { return [m.placed, '']; }],
+    ['Employees unmatched (HR review)', function (m) { return [m.unmatched, m.unmatched ? 'warn' : 'ok']; }, 'Review remaining suitable seats.'],
+    ['Preference match rate: first choice', function (m) { return [pct(m.firstRate), '']; }],
+    ['Preference match rate: first or second choice', function (m) { return [pct(m.firstSecondRate), '']; }],
+    ['Governance and fairness'],
+    ['Ranks decided by tiebreak (share of in-scope)', function (m) { return [pct(m.tiebreakShare), m.tiebreakShare > 0.5 ? 'warn' : '']; }, 'High values mean the tiebreak drives outcomes; test alternatives.'],
+    ['Override rate', function (m) { return [pct(m.overrideRate), '']; }, 'Calibration should not become unstructured discretion.'],
+    ['Overrides missing reason, approver, or date', function (m) { return [m.missingDocs, m.missingDocs ? 'crit' : 'ok']; }, 'Should be 0.'],
+    ['Over-filled options', function (m) { return [m.overfilled, m.overfilled ? 'crit' : 'ok']; }, 'Should be 0.'],
+    ['Groups below fairness screening threshold', function (m) { return [m.belowThreshold, m.belowThreshold ? 'crit' : 'ok']; }, 'Investigate with counsel before release.'],
+    ['Review requests received', function (m) { return [m.reviewsReceived, '']; }, 'Employee-experience measure.'],
+    ['Review requests pending', function (m) { return [m.reviewsPending, m.reviewsPending ? 'warn' : 'ok']; }, 'Resolve within the published timeframe.'],
+    ['Review requests that changed a placement', function (m) { return [m.reviewsChanged, '']; }],
+    ['Value'],
+    ['Estimated total avoided cost', function (m) { return [money(m.avoidedCost), '']; }, 'From the Cost estimate.']
+  ];
+
+  function renderSummary() {
+    return head('Summary', 'Measures available at decision time. Resolve every flag before results are released.') +
+      calc(function (R) {
+        var m = R.summary, flags = 0;
+        var rows = MEASURES.map(function (x) {
+          if (x.length === 1) return '<tr class="grp"><th colspan="3" scope="colgroup">' + esc(x[0]) + '</th></tr>';
+          var r = x[1](m), kind = r[1];
+          if (kind === 'warn' || kind === 'crit') flags++;
+          var val = kind ? pill(kind, String(r[0])) : '<b>' + esc(r[0]) + '</b>';
+          return '<tr><td>' + esc(x[0]) + '</td><td class="num">' + val + '</td><td class="mini">' + esc(x[2] || '') + '</td></tr>';
+        }).join('');
+        return '<div class="verdict ' + (flags ? 'v-warn' : 'v-ok') + '"><b>' + (flags ? flags + ' item' + (flags > 1 ? 's' : '') + ' to resolve before release' : 'No open flags') + '</b><span>' +
+          m.placed + ' of ' + m.inScope + ' in-scope employees placed · ' + pct(m.firstRate) + ' received their first choice</span></div>' +
+          '<div class="tbl-wrap"><table class="grid ro summary"><thead><tr><th scope="col">Measure</th><th scope="col">Value</th><th scope="col">What to look for</th></tr></thead><tbody>' + rows + '</tbody></table></div>';
+      }) +
+      '<p class="note">After transition, also track: time to fill, external hires avoided, ramp-up time, training completion, performance after the move, review requests, perceived fairness and trust, and retention at 6 and 12 months.</p>';
+  }
+
+  function renderCost() {
+    var items = [
+      ['severance', 'Severance', 'avoided'], ['recruiting', 'Recruiting cost per hire', 'avoided'],
+      ['onboarding', 'Onboarding and training cost for a new hire', 'avoided'], ['ramp', 'New-hire productivity lost during ramp-up', 'avoided'],
+      ['training', 'Cost of redeployment training', 'incurred'], ['transition', 'Redeployed employee’s productivity lost during transition', 'incurred'],
+      ['admin', 'Share of program administration cost', 'incurred']
+    ];
+    return head('Cost estimate', 'Estimated avoided cost per employee who would otherwise have been laid off and replaced (Section 5.5 of the paper). An estimate, not an audited figure. Example values are hypothetical; replace them with your own figures or published benchmarks.') +
+      '<div class="cols2"><section class="block"><h3>Per-employee components ($)</h3><div class="tbl-wrap"><table class="grid"><thead><tr><th class="w-xl" scope="col">Component</th><th class="w-s" scope="col">Effect</th><th class="w-m" scope="col">Amount ($)</th></tr></thead><tbody>' +
+      items.map(function (it) { return '<tr><td>' + esc(it[1]) + '</td><td>' + pill(it[2] === 'avoided' ? 'ok' : 'info', it[2]) + '</td><td>' + input('cost.' + it[0], 'number', it[1]) + '</td></tr>'; }).join('') +
+      '<tr class="total"><td colspan="2"><b>Avoided cost per employee</b></td><td class="num out">' + calc(function (R) { return '<b>' + money(R.cost.perEmployee) + '</b>'; }) + '</td></tr></tbody></table></div></section>' +
+      '<section class="block"><h3>Volume</h3><div class="tbl-wrap"><table class="grid"><tbody>' +
+      '<tr><td>Redeployments that replaced a layoff and rehire</td><td class="w-m">' + input('cost.count', 'number', 'Redeployments that replaced a layoff and rehire') + '</td></tr>' +
+      '<tr><td>Early attrition among redeployed employees (share, e.g. 0.1 = 10%)</td><td>' + input('cost.attrition', 'number', 'Early attrition share') + '</td></tr>' +
+      '<tr><td>Adjusted redeployment count</td><td class="num out">' + calc(function (R) { return n2(R.cost.adjusted); }) + '</td></tr>' +
+      '<tr><td>For reference: employees placed in this exercise</td><td class="num out">' + calc(function (R) { return String(R.summary.placed); }) + '</td></tr>' +
+      '</tbody></table></div><div class="bigfig"><span>Estimated total avoided cost</span>' + calc(function (R) { return '<b>' + money(R.cost.total) + '</b>'; }) + '</div>' +
+      '<p class="note">Count only cases where the layoff and the replacement hire would otherwise have occurred.</p></section></div>';
+  }
+
+  /* ---------- render / refresh ---------- */
+  function render() {
+    var tab = TABS.filter(function (t) { return t.id === current; })[0];
+    document.querySelectorAll('.tabs button').forEach(function (b) {
+      var on = b.dataset.tab === current; b.setAttribute('aria-selected', on ? 'true' : 'false'); b.tabIndex = on ? 0 : -1;
+    });
+    pending = []; calcs = [];
+    panel.innerHTML = tab.render();
+    panel.setAttribute('aria-labelledby', 'tab-' + current);
+    panel.querySelectorAll('[data-c]').forEach(function (el) { calcs.push({ el: el, fn: pending[+el.dataset.c] }); });
+    refresh();
+  }
+  function refresh() {
+    var R = compute(state);
+    calcs.forEach(function (c) { var h = c.fn(R); if (c.el.innerHTML !== h) c.el.innerHTML = h; });
+    var m = R.summary;
+    document.getElementById('status').innerHTML =
+      '<span><b>' + m.inScope + '</b> in scope</span><span><b>' + m.openSeats + '</b> open seats</span><span><b>' + m.placed + '</b> placed</span>' +
+      '<span><b>' + pct(m.firstRate) + '</b> first choice</span>';
+  }
+  function markDirty() { dirty = true; }
+
+  /* ---------- events ---------- */
+  panel.addEventListener('input', onEdit);
+  panel.addEventListener('change', onEdit);
+  function onEdit(e) {
+    var el = e.target;
+    if (el.dataset.ov != null) {
+      var key = lcs(el.dataset.ov);
+      if (BAD_KEYS[key]) { toast('That employee ID is a reserved word. Rename the employee to record an override.', 'warn'); return; }
+      state.overrides[key] = state.overrides[key] || { placement: '', reason: '', approver: '', date: '' };
+      state.overrides[key][el.dataset.k] = el.value;
+    } else if (el.dataset.path) {
+      setPath(el.dataset.path, el.value);
+    } else return;
+    markDirty(); refresh();
+  }
+  panel.addEventListener('click', function (e) {
+    var b = e.target.closest('button[data-act]');
+    if (!b) return;
+    var act = b.dataset.act, list = b.dataset.list;
+    if (act === 'add') {
+      var L = listRef(list);
+      if (L.length >= MAX_ROWS) { toast('Row limit reached (' + MAX_ROWS + ').', 'warn'); return; }
+      L.push(NEW_ROW[list]());
+      pageOf[list] = Math.floor((L.length - 1) / PAGE);
+      markDirty(); keepScroll(render);
+      var t = panel.querySelector('table[data-list="' + list + '"] tbody tr:last-child .in');
+      if (t) t.focus();
+    } else if (act === 'del') {
+      listRef(list).splice(+b.dataset.i, 1); markDirty(); keepScroll(render);
+    } else if (act === 'page') {
+      pageOf[list] = +b.dataset.p; render();
+      var tb = panel.querySelector('table[data-list="' + list + '"]') || panel.querySelector('.pager');
+      if (tb) tb.scrollIntoView({ block: 'nearest' });
+    } else if (act === 'fillFair') {
+      var have = {}; state.fairness.forEach(function (f) { have[lcs(f.id)] = 1; });
+      var added = 0;
+      compute(state).calibration.forEach(function (c) { if (!have[lcs(c.id)]) { state.fairness.push({ id: c.id, group: '' }); added++; } });
+      markDirty(); keepScroll(render); toast(added ? added + ' employee IDs added.' : 'Every ranked employee is already listed.');
+    }
+  });
+  function keepScroll(fn) { var y = window.scrollY; fn(); window.scrollTo(0, y); }
+
+  /* Paste a block copied from Excel into a grid */
+  panel.addEventListener('paste', function (e) {
+    var el = e.target, path = el.dataset && el.dataset.path;
+    if (!path) return;
+    var tbl = el.closest('table[data-list]');
+    if (!tbl) return;
+    var text = (e.clipboardData || window.clipboardData).getData('text');
+    if (!/[\t\n]/.test(text.replace(/\n$/, ''))) return;
+    e.preventDefault();
+    var list = tbl.dataset.list, keys = tbl.dataset.keys.split(','), parts = path.split('.');
+    var key = parts.pop(), row0 = +parts.pop(), col0 = keys.indexOf(key), L = listRef(list);
+    var lines = text.replace(/\r/g, '').replace(/\n$/, '').split('\n');
+    if (row0 + lines.length > MAX_ROWS) { toast('That paste would exceed ' + MAX_ROWS + ' rows.', 'warn'); return; }
+    lines.forEach(function (line, r) {
+      while (L.length <= row0 + r) L.push(NEW_ROW[list]());
+      line.split('\t').forEach(function (cell, c) {
+        var k = keys[col0 + c]; if (!k) return;
+        var v = cell.trim();
+        if (/^(hire|start|date|received|resolved)$/.test(k)) v = normDate(v);
+        L[row0 + r][k] = v;
+      });
+    });
+    markDirty(); keepScroll(render);
+    toast('Pasted ' + lines.length + ' row' + (lines.length > 1 ? 's' : '') + '.');
+  });
+
+  /* Tabs, with arrow-key navigation */
+  var tabsEl = document.querySelector('.tabs');
+  tabsEl.innerHTML = TABS.map(function (t) {
+    return '<button type="button" role="tab" id="tab-' + t.id + '" data-tab="' + t.id + '" aria-controls="panel">' + (t.n ? '<span class="tn">' + t.n + '</span>' : '') + esc(t.label) + '</button>';
+  }).join('');
+  tabsEl.addEventListener('click', function (e) {
+    var b = e.target.closest('button[data-tab]'); if (!b) return;
+    current = b.dataset.tab; render(); b.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+  });
+  tabsEl.addEventListener('keydown', function (e) {
+    if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft') return;
+    var i = TABS.findIndex(function (t) { return t.id === current; });
+    i = (i + (e.key === 'ArrowRight' ? 1 : TABS.length - 1)) % TABS.length;
+    current = TABS[i].id; render(); document.getElementById('tab-' + current).focus();
+  });
+
+  /* ---------- toolbar ---------- */
+  var armed = null;
+  function confirmTwice(btn, label, fn) {
+    if (!dirty || armed === btn) { armed = null; btn.textContent = label; fn(); return; }
+    armed = btn; btn.textContent = 'Discard changes? Click again';
+    btn.classList.add('armed');
+    setTimeout(function () { if (armed === btn) { armed = null; btn.textContent = label; btn.classList.remove('armed'); } }, 4000);
+  }
+  function load(S, msg) {
+    state = S; dirty = false; armed = null; pageOf = {};
+    document.querySelectorAll('.armed').forEach(function (b) { b.classList.remove('armed'); });
+    render(); toast(msg);
+  }
+  document.getElementById('b-example').addEventListener('click', function () {
+    var b = this; confirmTwice(b, 'Worked example', function () { load(exampleState(), 'Loaded the worked example from Appendix A.'); });
+  });
+  document.getElementById('b-blank').addEventListener('click', function () {
+    var b = this; confirmTwice(b, 'Start blank', function () { current = 'need'; load(blankState(), 'Started a blank exercise. Example rules and cost figures are kept. Edit them in Set the rules and Cost estimate.'); });
+  });
+  var fileIn = document.getElementById('file');
+  document.getElementById('b-open').addEventListener('click', function () { fileIn.click(); });
+  fileIn.addEventListener('change', async function () {
+    var f = fileIn.files[0]; fileIn.value = '';
+    if (!f) return;
+    try {
+      if (f.size > XLSX_LIMIT) throw new Error('The file is larger than 15 MB.');
+      var buf = await f.arrayBuffer(), S;
+      if (/\.xlsx$/i.test(f.name)) S = templateToState(await readWorkbook(buf));
+      else if (/\.json$/i.test(f.name)) {
+        var parsed;
+        try { parsed = JSON.parse(new TextDecoder().decode(buf)); } catch (e) { throw new Error('The project file is damaged and cannot be read.'); }
+        S = sanitize(parsed);
+      }
+      else throw new Error('Choose a .xlsx template or a .json project file.');
+      current = 'match';
+      load(S, 'Opened ' + f.name + ' · ' + S.employees.length + ' employees, ' + S.needs.length + ' options. Nothing was uploaded.');
+    } catch (err) {
+      toast('Could not open ' + f.name + ': ' + err.message, 'crit');
+    }
+  });
+
+  function sanitize(o) {
+    if (!o || typeof o !== 'object' || Array.isArray(o) || !(o.rules || o.employees || o.needs))
+      throw new Error('This is not a project file saved from this tool.');
+    var S = blankState();
+    function s(v) { return String(v == null ? '' : v).slice(0, 2000); }
+    function list(src, tmpl) {
+      if (!Array.isArray(src)) return [];
+      return src.slice(0, MAX_ROWS).map(function (r) {
+        var t = tmpl(), x = {};
+        Object.keys(t).forEach(function (k) { x[k] = s(r && r[k]); });
+        return x;
+      });
+    }
+    var R = o.rules || {};
+    ['asOf', 'tiebreak', 'missingPerf', 'favorable', 'threshold'].forEach(function (k) { if (R[k] != null) S.rules[k] = s(R[k]); });
+    ['perf', 'tenure', 'conduct'].forEach(function (k) {
+      var w = (R.weights || {})[k]; if (w) S.rules.weights[k] = { w: s(w.w), reason: s(w.reason) };
+    });
+    if (Array.isArray(R.perfBands)) S.rules.perfBands = list(R.perfBands, NEW_ROW['rules.perfBands']);
+    if (Array.isArray(R.conduct)) S.rules.conduct = list(R.conduct, NEW_ROW['rules.conduct']);
+    if (Array.isArray(R.tenure)) S.rules.tenure = list(R.tenure, NEW_ROW['rules.tenure']);
+    if (R.signoff) S.rules.signoff = { by: s(R.signoff.by), date: s(R.signoff.date), counsel: s(R.signoff.counsel) };
+    ['needs', 'employees', 'prefs', 'reviews', 'fairness'].forEach(function (k) { S[k] = list(o[k], NEW_ROW[k]); });
+    if (o.overrides && typeof o.overrides === 'object') {
+      Object.keys(o.overrides).slice(0, MAX_ROWS).forEach(function (k) {
+        if (BAD_KEYS[lcs(k)]) return;
+        var v = o.overrides[k] || {};
+        S.overrides[lcs(k)] = { placement: s(v.placement), reason: s(v.reason), approver: s(v.approver), date: s(v.date) };
+      });
+    }
+    if (o.cost) Object.keys(S.cost).forEach(function (k) { if (o.cost[k] != null) S.cost[k] = s(o.cost[k]); });
+    return S;
+  }
+
+  function download(blob, name) {
+    var url = URL.createObjectURL(blob), a = document.createElement('a');
+    a.href = url; a.download = name; a.rel = 'noopener';
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(function () { URL.revokeObjectURL(url); }, 4000);
+    if (PREVIEW) toast('Downloads are turned off in this preview. They work on the hosted site.', 'warn');
+  }
+  document.getElementById('b-save').addEventListener('click', function () {
+    var incl = document.getElementById('incl-fair').checked;
+    var S = JSON.parse(JSON.stringify(state));
+    if (!incl) S.fairness = [];
+    S.savedAt = new Date().toISOString(); S.tool = 'Redeploy, Don’t Release web tool 1.0';
+    download(new Blob([JSON.stringify(S, null, 2)], { type: 'application/json' }), 'redeploy-project-' + today() + '.json');
+    dirty = false;
+    if (!PREVIEW) toast('Project saved to your device' + (incl ? ', including fairness group data.' : '. Fairness group data was left out.'));
+  });
+  document.getElementById('b-xlsx').addEventListener('click', function () {
+    var R = compute(state), m = R.summary;
+    var sheets = [
+      { name: 'Summary', header: true, rows: [['Measure', 'Value']].concat(MEASURES.filter(function (x) { return x.length > 1; }).map(function (x) {
+        var raw = { 'Preference match rate: first choice': m.firstRate, 'Preference match rate: first or second choice': m.firstSecondRate,
+          'Ranks decided by tiebreak (share of in-scope)': m.tiebreakShare, 'Override rate': m.overrideRate }[x[0]];
+        if (raw !== undefined) return [x[0], raw == null ? '' : { v: raw, pct: true }];
+        if (x[0] === 'Estimated total avoided cost') return [x[0], m.avoidedCost];
+        return [x[0], x[1](m)[0]];
+      }), [[], ['Generated (UTC)', new Date().toISOString().slice(0, 16).replace('T', ' ')], ['Source', 'Durojaiye, O. A. (2026). Redeploy, don’t release [White paper]. Zenodo. https://doi.org/10.5281/zenodo.23935255'], ['Excel template', 'https://doi.org/10.5281/zenodo.23935835']]) },
+      { name: 'Final placements', header: true, rows: [['Order', 'Employee ID', 'Original match', 'Override placement', 'Final placement', 'Changed?', 'Reason for change', 'Approver', 'Date', 'Final choice received', 'Documentation check']]
+        .concat(R.calibration.map(function (c) { return [c.order, c.id, c.original, c.override, c.final, c.changed ? 'Yes' : 'No', c.reason, c.approver, c.date, c.finalChoice || 'Not ranked', c.doc]; })) },
+      { name: 'Scoring', header: true, rows: [['Employee ID', 'In scope', 'Tenure (days)', 'Completed years', 'Performance points', 'Tenure points', 'Conduct points', 'Total score (weighted)', 'Tiebreak value', 'Final rank', 'Rank decided by tiebreak?']]
+        .concat(R.scoring.map(function (s) { return [s.id, s.inScope ? 'Y' : 'N', s.days, s.years, s.perf, s.tenurePts, s.conduct, s.total, s.tb, s.rank, s.rank ? (s.tieDecided ? 'Yes' : 'No') : '']; })) },
+      { name: 'Needs', header: true, rows: [['Option', 'Department', 'Shift', 'Site', 'Open seats', 'Eligible role groups', 'Start date', 'Seats filled (final)', 'Seats remaining']]
+        .concat(state.needs.map(function (n, i) { return [n.name, n.dept, n.shift, n.site, +n.seats || 0, n.eligible, n.start, R.needs[i].filled, R.needs[i].remaining]; })) },
+      { name: 'Fairness (group level)', header: true, rows: [['Group', 'Considered', 'Received favorable outcome', 'Selection rate', 'Impact ratio', 'Screening result']]
+        .concat(R.fairness.groups.map(function (g) { return [g.group, g.considered, g.received, { v: g.rate, pct: true }, g.impact, g.impact == null ? '' : g.below ? 'Below threshold – review with counsel' : 'At or above threshold']; })) },
+      { name: 'Review requests', header: true, rows: [['Employee ID', 'Date received', 'Concern type', 'Description', 'Reviewer', 'Outcome', 'Date resolved', 'Days to resolve']]
+        .concat(state.reviews.map(function (r, i) { return [r.id, r.received, r.type, r.desc, r.reviewer, r.outcome, r.resolved, R.reviewDays[i]]; })) },
+      { name: 'Rules', header: true, rows: [['Setting', 'Value', 'Note']].concat([
+        ['As-of date', state.rules.asOf], ['Tiebreak rule', state.rules.tiebreak], ['Points if rating missing', state.rules.missingPerf],
+        ['Favorable outcome', state.rules.favorable], ['Screening threshold', state.rules.threshold],
+        ['Weight: performance', state.rules.weights.perf.w, state.rules.weights.perf.reason],
+        ['Weight: tenure', state.rules.weights.tenure.w, state.rules.weights.tenure.reason],
+        ['Weight: conduct', state.rules.weights.conduct.w, state.rules.weights.conduct.reason],
+        ['Approved by', state.rules.signoff.by], ['Approval date', state.rules.signoff.date], ['Counsel review', state.rules.signoff.counsel]]) }
+    ];
+    download(buildXlsx(sheets), 'redeploy-results-' + today() + '.xlsx');
+    if (!PREVIEW) toast('Results workbook saved to your device. Group-level fairness figures only; no individual group labels.');
+  });
+  document.getElementById('b-csv').addEventListener('click', function () {
+    var R = compute(state);
+    function q(v) { v = String(v == null ? '' : v); if (/^[=+\-@\t\r]/.test(v)) v = "'" + v; return /[",\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v; }
+    var rows = [['Order', 'Employee ID', 'Final placement', 'Final choice received', 'Changed?', 'Approver', 'Date']]
+      .concat(R.calibration.map(function (c) { return [c.order, c.id, c.final, c.finalChoice || 'Not ranked', c.changed ? 'Yes' : 'No', c.approver, c.date]; }));
+    download(new Blob(['﻿' + rows.map(function (r) { return r.map(q).join(','); }).join('\r\n')], { type: 'text/csv' }), 'redeploy-placements-' + today() + '.csv');
+    if (!PREVIEW) toast('Placements saved to your device as CSV.');
+  });
+
+  window.addEventListener('beforeunload', function (e) { if (dirty) { e.preventDefault(); e.returnValue = ''; } });
+  if (PREVIEW) document.getElementById('preview-note').hidden = false;
+  render();
+})();
+
+</script>
+</body>
+</html>
