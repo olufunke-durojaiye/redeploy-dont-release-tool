@@ -8,7 +8,7 @@ Companion Excel template: https://doi.org/10.5281/zenodo.23935835
 
 **Use the tool:** https://redeploy-dont-release.netlify.app
 
-**Source code:** https://github.com/Monijay1/redeploy-dont-release-tool
+**Source code:** https://github.com/olufunke-durojaiye/redeploy-dont-release-tool
 
 The tool runs the same rules-first matching as the Excel template (version 1.0): score, rank, serial-dictatorship matching, calibration with documented overrides, review requests, an adverse-impact screen, a summary, and the cost estimate. Users can open a filled-in copy of the Excel template directly, or enter data in the page.
 
@@ -49,12 +49,6 @@ Cloudflare Pages works the same way and also reads `_headers`.
 4. **Settings → Branches**: add a rule for `main` that requires a pull request before merging, so no one can change the live tool without review. Turn on two-factor authentication for your account.
 
 GitHub Pages ignores `_headers`. The Content Security Policy still applies because it is also written into `index.html`, and GitHub serves the site over HTTPS. The other protections in `_headers`, including the block on embedding the page in other sites, do not apply. If that matters, use Netlify or Cloudflare Pages.
-
-### After publishing
-
-- Add the tool’s address to both Zenodo records (paper and template) (paper: 10.5281/zenodo.23935255; template: 10.5281/zenodo.23935835) under **Related works** as *“is supplemented by”*.
-- Add the address to the paper’s next version and to the template’s **How to Use** tab.
-- Check the live headers at securityheaders.com. With `_headers` applied, aim for an A grade.
 
 ## Updating the tool
 
