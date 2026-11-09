@@ -2,7 +2,10 @@ cff-version: 1.2.0
 message: "If you use this tool, please cite the white paper."
 title: "Redeploy, Don't Release: web tool"
 type: software
-version: "1.0"
+version: "1.0.1"
+doi: 10.5281/zenodo.24071035
+url: "https://redeploy-dont-release.netlify.app"
+repository-code: "https://github.com/olufunke-durojaiye/redeploy-dont-release-tool"
 license: MIT
 authors:
   - family-names: Durojaiye

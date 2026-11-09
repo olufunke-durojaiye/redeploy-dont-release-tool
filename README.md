@@ -1,5 +1,7 @@
 # Redeploy, Don’t Release: web tool
 
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.24071035.svg)](https://doi.org/10.5281/zenodo.24071035)
+
 A browser-only companion to:
 
 > Durojaiye, O. A. (2026). *Redeploy, don’t release* [White paper]. Zenodo. https://doi.org/10.5281/zenodo.23935255
@@ -9,6 +11,8 @@ Companion Excel template: https://doi.org/10.5281/zenodo.23935835
 **Use the tool:** https://redeploy-dont-release.netlify.app
 
 **Source code:** https://github.com/olufunke-durojaiye/redeploy-dont-release-tool
+
+**Cite the tool:** Durojaiye, O. A. (2026). *Redeploy, Don’t Release: web tool* [Software]. Zenodo. https://doi.org/10.5281/zenodo.24071035
 
 The tool runs the same rules-first matching as the Excel template (version 1.0): score, rank, serial-dictatorship matching, calibration with documented overrides, review requests, an adverse-impact screen, a summary, and the cost estimate. Users can open a filled-in copy of the Excel template directly, or enter data in the page.
 
