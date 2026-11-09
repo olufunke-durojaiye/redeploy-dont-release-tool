@@ -7,6 +7,7 @@ A browser-only companion to:
 Companion Excel template: https://doi.org/10.5281/zenodo.23935835
 
 **Use the tool:** https://redeploy-dont-release.netlify.app
+
 **Source code:** https://github.com/Monijay1/redeploy-dont-release-tool
 
 The tool runs the same rules-first matching as the Excel template (version 1.0): score, rank, serial-dictatorship matching, calibration with documented overrides, review requests, an adverse-impact screen, a summary, and the cost estimate. Users can open a filled-in copy of the Excel template directly, or enter data in the page.
